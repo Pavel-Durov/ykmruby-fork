@@ -20,6 +20,9 @@
 #include <mruby/throw.h>
 #include <mruby/dump.h>
 #include <mruby/internal.h>
+#ifdef USE_YK
+#include <mruby/yk.h>
+#endif
 
 #ifdef MRB_NO_STDIO
 #if defined(__cplusplus)
@@ -2340,7 +2343,17 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 } while (0)
 
 #define DECODE_OPERANDS(ops) do { const mrb_code *pc = ci->pc+1; FETCH_ ## ops (); ci->pc = pc; } while (0)
+
+#ifdef USE_YK
+#define CALL_CODE_HOOKS() do { \
+  irep = ci->proc->body.irep; \
+  insn = BYTECODE_DECODER(*ci->pc); \
+  CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
+  mrb_jit_yk_hook(mrb, irep, ci->pc); \
+} while (0)
+#else
 #define CALL_CODE_HOOKS() do { insn = BYTECODE_DECODER(*ci->pc); CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); } while (0)
+#endif
 
 #ifdef MRB_USE_TASK_SCHEDULER
 /* TRUE when the current context is executing across a C call boundary, i.e.
@@ -3182,7 +3195,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
   uint16_t c;
   mrb_sym mid;
   const struct mrb_irep_catch_handler *ch;
-
 #ifndef MRB_USE_VM_SWITCH_DISPATCH
   static const void * const optable[] = {
 #define OPCODE(x,_) &&L_OP_ ## x,

@@ -13,6 +13,9 @@
 #include <mruby/string.h>
 #include <mruby/class.h>
 #include <mruby/internal.h>
+#ifdef USE_YK
+#include <mruby/yk.h>
+#endif
 
 void mrb_init_core(mrb_state*);
 void mrb_init_mrbgems(mrb_state*);
@@ -145,6 +148,9 @@ mrb_irep_free(mrb_state *mrb, mrb_irep *irep)
 
   if (irep->flags & MRB_IREP_NO_FREE) return;
   consolidated = (irep->flags & MRB_IREP_CONSOLIDATED) != 0;
+#ifdef USE_YK
+  yk_free_loc(mrb, irep);
+#endif
   if (!(irep->flags & MRB_ISEQ_NO_FREE))
     mrb_free(mrb, (void*)irep->iseq);
   if (irep->pool) {
@@ -192,6 +198,10 @@ mrb_close(mrb_state *mrb)
 {
   if (!mrb) return;
   mrb_protect_atexit(mrb);
+
+#ifdef USE_YK
+  yk_shutdown();
+#endif
 
   /* free */
   mrb_gc_free_gv(mrb);
