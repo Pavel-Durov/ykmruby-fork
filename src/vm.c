@@ -22,7 +22,36 @@
 #include <mruby/internal.h>
 #ifdef USE_YK
 #include <mruby/yk.h>
-#endif
+
+/* Workaround for yk's "Multi-locations not yet supported" panic.
+   numeric.h's mrb_int_{add,sub,mul}_overflow use __builtin_*_overflow, which are lowered to
+   llvm.{sadd,ssub,smul}.with.overflow: one call returning a {result, overflow-flag} struct.
+   OP_MATH branches on the flag, and that struct stays live across the branch, so it ends up
+   in the guard's stackmap. yk sets it as a value with two live locations, which is not
+   supported at the moment.
+
+   These wrappers keep the builtin for the flag but discard its result and compute the result
+   with a plain operator, so no struct is live across the branch. They are redirected only
+   within this file.
+
+   Assumed but not measured overhead vs. plain mruby is small - the result is computed twice,
+   once by the builtin and once by the plain operator.
+*/
+#define YK_INT_OVERFLOW(op, sym)                                            \
+  static inline mrb_bool yk_int_##op##_overflow(mrb_int a, mrb_int b, mrb_int *c) \
+  {                                                                         \
+    mrb_int t;                                                              \
+    mrb_bool o = mrb_int_##op##_overflow(a, b, &t);                         \
+    *c = (mrb_int)((mrb_uint)a sym (mrb_uint)b);                            \
+    return o;                                                               \
+  }
+YK_INT_OVERFLOW(add, +)
+YK_INT_OVERFLOW(sub, -)
+YK_INT_OVERFLOW(mul, *)
+#define mrb_int_add_overflow yk_int_add_overflow
+#define mrb_int_sub_overflow yk_int_sub_overflow
+#define mrb_int_mul_overflow yk_int_mul_overflow
+#endif // end of USE_YK
 
 #ifdef MRB_NO_STDIO
 #if defined(__cplusplus)
