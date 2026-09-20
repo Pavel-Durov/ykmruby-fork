@@ -1204,6 +1204,12 @@ cipop(mrb_state *mrb)
   struct mrb_context *c = mrb->c;
   mrb_callinfo *ci = c->ci;
 
+#ifdef USE_YK
+  if (ci->proc && !MRB_PROC_CFUNC_P(ci->proc)) {
+    ((mrb_irep*)ci->proc->body.irep)->called = FALSE;
+  }
+#endif
+
   /* Fast path: no env and no blk (most common for simple method calls) */
   if (mrb_likely((!ci->u.env || ci->u.env->tt != MRB_TT_ENV) && !ci->blk)) {
     c->ci--;

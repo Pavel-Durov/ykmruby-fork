@@ -13,8 +13,6 @@ YkLocation *yk_init_loc(mrb_state *mrb, const mrb_irep *irep);
 
 void yk_free_loc(mrb_state *mrb, mrb_irep *irep);
 
-static inline void
-mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
 mrb_code yk_load_insn(const mrb_code *pc);
 
 static inline mrb_code
@@ -24,6 +22,8 @@ yk_fetch(const mrb_code *pc)
   return yk_load_insn((const mrb_code*)yk_promote((void*)pc));
 }
 
+static inline void
+mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
 {
   if (!yk_mt) {
     yk_mt = yk_mt_new(NULL);
@@ -35,6 +35,10 @@ yk_fetch(const mrb_code *pc)
   }
   if (!locs) return;
   YkLocation *loc = &locs[(size_t)(pc - irep->iseq)];
+  if (pc == irep->iseq && yk_is_interpreting()) {
+    if (!irep->called) ((mrb_irep*)irep)->called = TRUE;
+    else if (yk_location_is_null(*loc)) *loc = yk_location_new();
+  }
   yk_mt_control_point(yk_mt, loc);
 }
 
