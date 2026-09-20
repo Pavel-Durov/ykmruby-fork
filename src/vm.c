@@ -1443,7 +1443,7 @@ mrb_ci_nregs(mrb_callinfo *ci)
 
 mrb_value mrb_obj_missing(mrb_state *mrb, mrb_value mod);
 
-static mrb_method_t
+MRB_YK_OUTLINE static mrb_method_t
 prepare_missing(mrb_state *mrb, mrb_callinfo *ci, mrb_value recv, mrb_sym mid, mrb_bool super)
 {
   mrb_sym missing = MRB_SYM(method_missing);
@@ -1756,7 +1756,7 @@ mrb_object_exec(mrb_state *mrb, mrb_value self, struct RClass *target_class)
   return mrb_exec_irep(mrb, self, mrb_proc_ptr(blk));
 }
 
-static mrb_noreturn void
+MRB_YK_OUTLINE static mrb_noreturn void
 vis_error(mrb_state *mrb, mrb_sym mid, mrb_value args, mrb_value recv, mrb_bool priv)
 {
   mrb_no_method_error(mrb, mid, args, "%s method '%n' called for %T", (priv ? "private" : "protected"), mid, recv);

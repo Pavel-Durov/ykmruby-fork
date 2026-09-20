@@ -178,7 +178,7 @@ exc_set_backtrace(mrb_state *mrb, mrb_value exc)
   return backtrace;
 }
 
-void
+MRB_YK_OUTLINE void
 mrb_exc_set(mrb_state *mrb, mrb_value exc)
 {
   if (mrb_nil_p(exc)) {
@@ -219,7 +219,7 @@ exc_throw(mrb_state *mrb, mrb_value exc)
  * mrb: The mruby state.
  * exc: The exception object to raise.
  */
-MRB_API mrb_noreturn void
+MRB_YK_OUTLINE MRB_API mrb_noreturn void
 mrb_exc_raise(mrb_state *mrb, mrb_value exc)
 {
   if (mrb_break_p(exc)) {
@@ -244,7 +244,7 @@ mrb_exc_raise(mrb_state *mrb, mrb_value exc)
  * c:   The exception class to instantiate.
  * msg: The C string message for the exception.
  */
-MRB_API mrb_noreturn void
+MRB_YK_OUTLINE MRB_API mrb_noreturn void
 mrb_raise(mrb_state *mrb, struct RClass *c, const char *msg)
 {
   mrb_exc_raise(mrb, mrb_exc_new_str(mrb, c, mrb_str_new_cstr(mrb, msg)));
@@ -453,7 +453,7 @@ error_va(mrb_state *mrb, struct RClass *c, const char *fmt, va_list ap)
  * fmt: The format string for the exception message.
  * ...: Variable arguments for the format string.
  */
-MRB_API mrb_noreturn void
+MRB_YK_OUTLINE MRB_API mrb_noreturn void
 mrb_raisef(mrb_state *mrb, struct RClass *c, const char *fmt, ...)
 {
   va_list ap;
