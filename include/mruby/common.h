@@ -25,6 +25,11 @@
 #else
 # define MRB_YK_OUTLINE
 #endif
+#ifdef USE_YK
+# define MRB_YK_IDEMPOTENT __attribute__((yk_idempotent))
+#else
+# define MRB_YK_IDEMPOTENT
+#endif
 
 #ifdef __cplusplus
 #ifdef MRB_USE_CXX_ABI

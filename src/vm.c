@@ -3416,7 +3416,19 @@ RETRY_TRY_BLOCK:
         struct RObject *o = mrb_obj_ptr(recv);
         if (MRB_OBJ_SHAPED_P(o) && o->iv) {
           mrb_shaped_iv *siv = (mrb_shaped_iv*)o->iv;
+#ifdef USE_YK
+          int idx;
+          if (yk_is_interpreting()) {
+            idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
+          }
+          else {
+            idx = mrb_shape_lookup((mrb_state*)yk_promote((void*)mrb),
+                                   (mrb_iv_shape*)yk_promote((void*)siv->shape),
+                                   yk_promote(irep->syms[b]));
+          }
+#else
           int idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
+#endif
           regs[a] = (idx >= 0 && !mrb_undef_p(siv->values[idx]))
                     ? siv->values[idx] : mrb_nil_value();
           NEXT;
@@ -3441,7 +3453,19 @@ RETRY_TRY_BLOCK:
         struct RObject *o = mrb_obj_ptr(recv);
         if (MRB_OBJ_SHAPED_P(o) && o->iv && !mrb_frozen_p(o)) {
           mrb_shaped_iv *siv = (mrb_shaped_iv*)o->iv;
+#ifdef USE_YK
+          int idx;
+          if (yk_is_interpreting()) {
+            idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
+          }
+          else {
+            idx = mrb_shape_lookup((mrb_state*)yk_promote((void*)mrb),
+                                   (mrb_iv_shape*)yk_promote((void*)siv->shape),
+                                   yk_promote(irep->syms[b]));
+          }
+#else
           int idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
+#endif
           if (idx >= 0 && !mrb_undef_p(siv->values[idx])) {
             siv->values[idx] = regs[a];
             mrb_field_write_barrier_value(mrb, (struct RBasic*)o, regs[a]);
