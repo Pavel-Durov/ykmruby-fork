@@ -15,6 +15,15 @@ void yk_free_loc(mrb_state *mrb, mrb_irep *irep);
 
 static inline void
 mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
+mrb_code yk_load_insn(const mrb_code *pc);
+
+static inline mrb_code
+yk_fetch(const mrb_code *pc)
+{
+  if (yk_is_interpreting()) return *pc;
+  return yk_load_insn((const mrb_code*)yk_promote((void*)pc));
+}
+
 {
   if (!yk_mt) {
     yk_mt = yk_mt_new(NULL);
