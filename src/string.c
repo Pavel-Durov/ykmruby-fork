@@ -388,7 +388,7 @@ mrb_utf8_to_buf(char *buf, mrb_int cp)
 #define utf8_islead(c) ((unsigned char)((c)&0xc0) != 0x80)
 
 /* the byte length a lead byte claims, read only through mrb_utf8len() */
-static const char mrb_utf8len_table[] = {
+MRB_YK_STATIC const char mrb_utf8len_table[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0
 };
@@ -2062,7 +2062,7 @@ str_replace_partial(mrb_state *mrb, mrb_value src, mrb_int pos, mrb_int end, mrb
    `mrb_digitmap` is lower case because `Integer#to_s` reads a number
    through it and CRuby spells that in lower case, so the two cannot share
    one table. */
-static const char escape_hexmap[] = "0123456789ABCDEF";
+MRB_YK_STATIC const char escape_hexmap[] = "0123456789ABCDEF";
 
 static mrb_value
 str_escape(mrb_state *mrb, mrb_value str, mrb_bool inspect)
@@ -4460,7 +4460,7 @@ mrb_encoding(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry string_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry string_rom_entries[] = {
   MRB_MT_ENTRY(mrb_str_bytesize,        MRB_SYM(bytesize),        MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_str_cmp_m,           MRB_OPSYM(cmp),           MRB_ARGS_REQ(1)),                   /* 15.2.10.5.1  */
   MRB_MT_ENTRY(mrb_str_equal_m,         MRB_OPSYM(eq),            MRB_ARGS_REQ(1)),                   /* 15.2.10.5.2  */

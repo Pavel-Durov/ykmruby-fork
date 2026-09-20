@@ -12,7 +12,7 @@
 #define Z 1
 #define S 3
 #define W 4
-static const uint8_t mrb_jit_yk_insn_size[] = {
+MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size[] = {
 #define B 2
 #define BB 3
 #define BBB 4
@@ -27,7 +27,7 @@ static const uint8_t mrb_jit_yk_insn_size[] = {
 #undef BS
 #undef BSS
 };
-static const uint8_t mrb_jit_yk_insn_size1[] = {
+MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size1[] = {
 #define B 3
 #define BB 4
 #define BBB 5
@@ -42,7 +42,7 @@ static const uint8_t mrb_jit_yk_insn_size1[] = {
 #undef BS
 #undef BSS
 };
-static const uint8_t mrb_jit_yk_insn_size2[] = {
+MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size2[] = {
 #define B 2
 #define BB 4
 #define BBB 5
@@ -57,7 +57,7 @@ static const uint8_t mrb_jit_yk_insn_size2[] = {
 #undef BS
 #undef BSS
 };
-static const uint8_t mrb_jit_yk_insn_size3[] = {
+MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size3[] = {
 #define B 3
 #define BB 5
 #define BBB 6
