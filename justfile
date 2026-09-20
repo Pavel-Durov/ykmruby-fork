@@ -4,10 +4,10 @@ yk_profile := "release"
 build: build-plain
 
 build-plain:
-    rake
+    rake -m -j$(nproc)
 
 build-yk: build-plain
-    YK_ROOT={{yk_root}} YK_PROFILE={{yk_profile}} rake MRUBY_CONFIG=yk_wordboxing
+    YK_ROOT={{yk_root}} YK_PROFILE={{yk_profile}} rake -m -j$(nproc) MRUBY_CONFIG=yk_wordboxing
 
 test: test-plain
 
