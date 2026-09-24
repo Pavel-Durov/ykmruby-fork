@@ -55,6 +55,9 @@ mrb_open_core(void)
   *mrb = mrb_state_zero;
   mrb->atexit_stack_len = 0;
   mrb->bootstrapping = TRUE;
+#ifdef USE_YK
+  yk_init();
+#endif
 
   if (mrb_core_init_protect(mrb, init_gc_and_core, NULL)) {
     /* Return mrb with mrb->exc set for caller to inspect */
@@ -198,10 +201,6 @@ mrb_close(mrb_state *mrb)
 {
   if (!mrb) return;
   mrb_protect_atexit(mrb);
-
-#ifdef USE_YK
-  yk_shutdown();
-#endif
 
   /* free */
   mrb_gc_free_gv(mrb);

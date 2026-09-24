@@ -1,6 +1,7 @@
 #include <mruby.h>
 
 #ifdef USE_YK
+#include <stdlib.h>
 #include <mruby/irep.h>
 #include <mruby/opcode.h>
 #include <mruby/yk.h>
@@ -77,6 +78,14 @@ MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size3[] = {
 #undef W
 
 YkMT *yk_mt = NULL;
+
+void yk_init(void)
+{
+  if (!yk_mt) {
+    yk_mt = yk_mt_new(NULL);
+    atexit(yk_shutdown);
+  }
+}
 
 __attribute__((yk_idempotent))
 mrb_code yk_load_insn(const mrb_code *pc)
