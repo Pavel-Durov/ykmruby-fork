@@ -15,34 +15,32 @@ YkLocation *yk_init_loc(mrb_state *mrb, const mrb_irep *irep);
 
 void yk_free_loc(mrb_state *mrb, mrb_irep *irep);
 
-mrb_code yk_load_insn(const mrb_code *pc);
-
-static inline mrb_code
-yk_fetch(const mrb_code *pc)
-{
-  if (yk_is_interpreting()) return *pc;
-  return yk_load_insn((const mrb_code*)yk_promote((void*)pc));
-}
+extern YkLocation yk_null_loc;
 
 static inline void
 mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
 {
   YkLocation *locs = (YkLocation*)irep->yk_locs;
-  if (!locs) {
-    locs = yk_init_loc(mrb, irep);
-    ((mrb_irep*)irep)->yk_locs = locs;
-  }
-  if (!locs) return;
-  YkLocation *loc = &locs[(size_t)(pc - irep->iseq)];
   if (yk_is_interpreting()) {
-    if (pc == irep->iseq){
-      if (!irep->called) {
-        ((mrb_irep*)irep)->called = TRUE;
+    if (!locs) {
+      locs = yk_init_loc(mrb, irep);
+      ((mrb_irep*)irep)->yk_locs = locs;
+    }
+    if (locs) {
+      YkLocation *loc = &locs[(size_t)(pc - irep->iseq)];
+      if (pc == irep->iseq) {
+        if (!irep->called) {
+          ((mrb_irep*)irep)->called = TRUE;
+        }
+      }
+      else if (yk_location_is_null(*loc)) {
+        *loc = yk_location_new();
       }
     }
-    else if (yk_location_is_null(*loc)) {
-      *loc = yk_location_new();
-    }
+  }
+  YkLocation *loc = &yk_null_loc;
+  if (locs) {
+    loc = &locs[(size_t)(pc - irep->iseq)];
   }
   yk_mt_control_point(yk_mt, loc);
 }

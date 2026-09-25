@@ -78,20 +78,15 @@ MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size3[] = {
 #undef W
 
 YkMT *yk_mt = NULL;
+YkLocation yk_null_loc;
 
 void yk_init(void)
 {
   if (!yk_mt) {
     yk_mt = yk_mt_new(NULL);
+    yk_null_loc = yk_location_null();
     atexit(yk_shutdown);
   }
-}
-
-__attribute__((yk_idempotent))
-mrb_code yk_load_insn(const mrb_code *pc)
-{
-  asm volatile("" : "+r,m"(pc) : : "memory");
-  return *pc;
 }
 
 void yk_shutdown(void)

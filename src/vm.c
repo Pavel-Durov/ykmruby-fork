@@ -2532,7 +2532,12 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 #define CALL_CODE_HOOKS() do { \
   irep = ci->proc->body.irep; \
   mrb_jit_yk_hook(mrb, irep, ci->pc); \
-  insn = BYTECODE_DECODER(yk_fetch(ci->pc)); \
+  if (yk_is_interpreting()) { \
+    insn_pc = ci->pc; \
+  } else { \
+    insn_pc = (const mrb_code*)yk_promote((void*)ci->pc); \
+  } \
+  insn = BYTECODE_DECODER(*insn_pc); \
   CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
 } while (0)
 #else
@@ -3371,6 +3376,9 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
   /* mrb_assert(MRB_PROC_CFUNC_P(begin_proc)) */
   const mrb_irep *irep = begin_proc->body.irep;
   mrb_code insn;
+#ifdef USE_YK
+  const mrb_code *insn_pc;
+#endif
   int ai = mrb_gc_arena_save(mrb);
   struct mrb_jmpbuf *prev_jmp = mrb->jmp;
   struct mrb_jmpbuf c_jmp;
