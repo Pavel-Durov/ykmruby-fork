@@ -21,7 +21,7 @@
 # define MRB_YK_STATIC static
 #endif
 #ifdef USE_YK
-# define MRB_YK_OUTLINE __attribute__((yk_outline))
+# define MRB_YK_OUTLINE __attribute__((noinline, yk_outline))
 #else
 # define MRB_YK_OUTLINE
 #endif
