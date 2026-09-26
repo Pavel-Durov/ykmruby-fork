@@ -925,7 +925,7 @@ typedef struct mrb_shaped_iv {
  * Look up sym in shape by walking the parent chain.
  * Returns the value index (0-based), or -1 if not found.
  */
-static inline MRB_YK_IDEMPOTENT int
+static inline int
 mrb_shape_lookup(mrb_state *mrb, mrb_iv_shape *shape, mrb_sym sym)
 {
 #ifndef MRB_NO_IV_CACHE
