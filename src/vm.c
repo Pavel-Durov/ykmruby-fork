@@ -2529,15 +2529,23 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 #define DECODE_OPERANDS(ops) do { const mrb_code *pc = ci->pc+1; FETCH_ ## ops (); ci->pc = pc; } while (0)
 
 #ifdef USE_YK
+
+__attribute__((yk_idempotent, noinline))
+mrb_code yk_load_insn(const mrb_code *pc) {
+  __asm__ volatile("" : "+r,m"(pc) : : "memory");
+  return *pc;
+}
+
 #define CALL_CODE_HOOKS() do { \
   irep = ci->proc->body.irep; \
   mrb_jit_yk_hook(mrb, irep, ci->pc); \
   if (yk_is_interpreting()) { \
     insn_pc = ci->pc; \
+    insn = BYTECODE_DECODER(*insn_pc); \
   } else { \
     insn_pc = (const mrb_code*)yk_promote((void*)ci->pc); \
+    insn = BYTECODE_DECODER(yk_load_insn(insn_pc)); \
   } \
-  insn = BYTECODE_DECODER(*insn_pc); \
   CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
 } while (0)
 #else

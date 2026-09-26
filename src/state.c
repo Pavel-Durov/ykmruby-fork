@@ -154,8 +154,17 @@ mrb_irep_free(mrb_state *mrb, mrb_irep *irep)
 #ifdef USE_YK
   yk_free_loc(mrb, irep);
 #endif
+#ifndef USE_YK
+  /* YKFIXME: Memory leak under - the iseq of a freed irep is never freed.
+     yk_load_insn is idempotent on the iseq address, so another iseq allocated
+     at the same address would make old traces read stale values.
+
+     Tried numeric version (bumped on free) as part of the idempotence key.
+     It works but cost ~9% (Permute, Richards). This needs further investigation.
+  */
   if (!(irep->flags & MRB_ISEQ_NO_FREE))
     mrb_free(mrb, (void*)irep->iseq);
+#endif
   if (irep->pool) {
     for (i=0; i<irep->plen; i++) {
       if ((irep->pool[i].tt & 3) == IREP_TT_STR ||
