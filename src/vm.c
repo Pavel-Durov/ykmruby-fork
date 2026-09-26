@@ -2536,6 +2536,20 @@ mrb_code yk_load_insn(const mrb_code *pc) {
   return *pc;
 }
 
+__attribute__((yk_idempotent, noinline))
+uint32_t yk_load_b(const mrb_code *pc) { return pc[0]; }
+__attribute__((yk_idempotent, noinline))
+uint32_t yk_load_s(const mrb_code *pc) { return pc[0]<<8|pc[1]; }
+__attribute__((yk_idempotent, noinline))
+uint32_t yk_load_w(const mrb_code *pc) { return pc[0]<<16|pc[1]<<8|pc[2]; }
+
+#undef READ_B
+#undef READ_S
+#undef READ_W
+#define READ_B() (yk_is_interpreting() ? PEEK_B(pc++) : yk_load_b(pc++))
+#define READ_S() (pc+=2, yk_is_interpreting() ? PEEK_S(pc-2) : yk_load_s(pc-2))
+#define READ_W() (pc+=3, yk_is_interpreting() ? PEEK_W(pc-3) : yk_load_w(pc-3))
+
 #define CALL_CODE_HOOKS() do { \
   irep = ci->proc->body.irep; \
   mrb_jit_yk_hook(mrb, irep, ci->pc); \
@@ -2550,7 +2564,7 @@ mrb_code yk_load_insn(const mrb_code *pc) {
 } while (0)
 #else
 #define CALL_CODE_HOOKS() do { insn = BYTECODE_DECODER(*ci->pc); CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); } while (0)
-#endif
+#endif // End of USE_YK
 
 #ifdef MRB_USE_TASK_SCHEDULER
 /* TRUE when the current context is executing across a C call boundary, i.e.
