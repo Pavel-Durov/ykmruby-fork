@@ -64,7 +64,7 @@ mrb_value mrb_flo_to_s(mrb_state *, mrb_value);
 #endif
 void mrb_method_added(mrb_state *mrb, struct RClass *c, mrb_sym mid);
 mrb_noreturn void mrb_method_missing(mrb_state *mrb, mrb_sym name, mrb_value self, mrb_value args);
-mrb_method_t mrb_vm_find_method(mrb_state *mrb, struct RClass *c, struct RClass **cp, mrb_sym mid);
+MRB_YK_OUTLINE mrb_method_t mrb_vm_find_method(mrb_state *mrb, struct RClass *c, struct RClass **cp, mrb_sym mid);
 #ifdef MRB_USE_REFINEMENTS
 /* refinement.c / class.c / proc.c */
 struct RArray *mrb_vm_refinements(mrb_state *mrb, const mrb_callinfo *ci);
@@ -883,6 +883,9 @@ void mrb_gc_free_iv(mrb_state*, struct RObject*);
 /* IV shape tree */
 void mrb_init_shape(mrb_state*);
 void mrb_free_shape(mrb_state*);
+#ifdef USE_YK
+extern uint32_t mrb_yk_shape_epoch;
+#endif
 
 /*
  * Object Shape (Hidden Class) structures.

@@ -106,7 +106,7 @@ The value below allows about 60000 recursive calls in the simplest case. */
    not run once the arena has let go of it: under MRB_GC_STRESS every
    allocation is a full GC, and the value would be swept before the VM stores
    it into a register. The unwind therefore comes after the realloc. */
-static void
+MRB_YK_OUTLINE static void
 mrb_gc_arena_shrink(mrb_state *mrb, int idx)
 {
   mrb_gc *gc = &mrb->gc;
@@ -1679,7 +1679,7 @@ mrb_funcall_argv(mrb_state *mrb, mrb_value self, mrb_sym mid, mrb_int argc, cons
   return mrb_funcall_with_block(mrb, self, mid, argc, argv, mrb_nil_value());
 }
 
-static void
+MRB_YK_OUTLINE static void
 check_argument_count(mrb_state *mrb, const mrb_callinfo *ci, mrb_aspec aspec)
 {
   mrb_int argc = ci->n;
@@ -2529,6 +2529,14 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 #define DECODE_OPERANDS(ops) do { const mrb_code *pc = ci->pc+1; FETCH_ ## ops (); ci->pc = pc; } while (0)
 
 #ifdef USE_YK
+
+__attribute__((yk_idempotent, noinline))
+static int
+yk_shape_lookup(mrb_state *mrb, mrb_iv_shape *shape, mrb_sym sym, uint32_t epoch)
+{
+  (void)epoch;
+  return mrb_shape_lookup(mrb, shape, sym);
+}
 
 __attribute__((yk_idempotent, noinline))
 mrb_code yk_load_insn(const mrb_code *pc) {
@@ -3601,9 +3609,10 @@ RETRY_TRY_BLOCK:
             idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
           }
           else {
-            idx = mrb_shape_lookup((mrb_state*)yk_promote((void*)mrb),
-                                   (mrb_iv_shape*)yk_promote((void*)siv->shape),
-                                   yk_promote(irep->syms[b]));
+            idx = yk_shape_lookup((mrb_state*)yk_promote((void*)mrb),
+                                  (mrb_iv_shape*)yk_promote((void*)siv->shape),
+                                  yk_promote(irep->syms[b]),
+                                  yk_promote((unsigned int)mrb_yk_shape_epoch));
           }
 #else
           int idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
@@ -3638,9 +3647,10 @@ RETRY_TRY_BLOCK:
             idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
           }
           else {
-            idx = mrb_shape_lookup((mrb_state*)yk_promote((void*)mrb),
-                                   (mrb_iv_shape*)yk_promote((void*)siv->shape),
-                                   yk_promote(irep->syms[b]));
+            idx = yk_shape_lookup((mrb_state*)yk_promote((void*)mrb),
+                                  (mrb_iv_shape*)yk_promote((void*)siv->shape),
+                                  yk_promote(irep->syms[b]),
+                                  yk_promote((unsigned int)mrb_yk_shape_epoch));
           }
 #else
           int idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);

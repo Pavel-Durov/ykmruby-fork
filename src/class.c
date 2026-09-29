@@ -3370,7 +3370,7 @@ mrb_refined_mid_p(mrb_state *mrb, mrb_sym mid)
 }
 #endif
 
-mrb_method_t
+MRB_YK_OUTLINE mrb_method_t
 mrb_vm_find_method(mrb_state *mrb, struct RClass *c, struct RClass **cp, mrb_sym mid)
 {
   mrb_method_t m;
