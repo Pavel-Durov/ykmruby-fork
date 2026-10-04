@@ -2548,7 +2548,7 @@ uint32_t yk_load_w(const mrb_code *pc) { return pc[0]<<16|pc[1]<<8|pc[2]; }
 
 #define CALL_CODE_HOOKS() do { \
   irep = ci->proc->body.irep; \
-  mrb_jit_yk_hook(mrb, irep, ci->pc); \
+  mrb_jit_yk_hook(mrb, irep, yk_irep_locs(mrb, irep), ci->pc); \
   if (yk_is_interpreting()) { \
     insn_pc = ci->pc; \
     insn = BYTECODE_DECODER(*insn_pc); \

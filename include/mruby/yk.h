@@ -17,32 +17,33 @@ void yk_free_loc(mrb_state *mrb, mrb_irep *irep);
 
 extern YkLocation yk_null_loc;
 
+/* `locs` is irep->yk_locs, already initialised by the caller (see
+   yk_irep_locs()), so a trace doesn't guard on it at every instruction. */
 static inline void
-mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
+mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, YkLocation *locs, const mrb_code *pc)
 {
-  YkLocation *locs = (YkLocation*)irep->yk_locs;
+  YkLocation *loc = &locs[(size_t)(pc - irep->iseq)];
   if (yk_is_interpreting()) {
-    if (!locs) {
-      locs = yk_init_loc(mrb, irep);
-      ((mrb_irep*)irep)->yk_locs = locs;
-    }
-    if (locs) {
-      YkLocation *loc = &locs[(size_t)(pc - irep->iseq)];
-      if (pc == irep->iseq) {
-        if (!irep->called) {
-          ((mrb_irep*)irep)->called = TRUE;
-        }
-      }
-      else if (yk_location_is_null(*loc)) {
-        *loc = yk_location_new();
+    if (pc == irep->iseq) {
+      if (!irep->called) {
+        ((mrb_irep*)irep)->called = TRUE;
       }
     }
-  }
-  YkLocation *loc = &yk_null_loc;
-  if (locs) {
-    loc = &locs[(size_t)(pc - irep->iseq)];
+    else if (yk_location_is_null(*loc)) {
+      *loc = yk_location_new();
+    }
   }
   yk_mt_control_point(yk_mt, loc);
+}
+
+/* An executing irep has ilen > 0, so this never returns NULL. */
+static inline YkLocation*
+yk_irep_locs(mrb_state *mrb, const mrb_irep *irep)
+{
+  if (!irep->yk_locs) {
+    ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep);
+  }
+  return (YkLocation*)irep->yk_locs;
 }
 
 #endif /* MRUBY_YK_H */
