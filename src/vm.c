@@ -2487,7 +2487,11 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 #define INIT_DISPATCH for (;;) { CALL_CODE_HOOKS(); switch (insn) {
 #define CASE(insn,ops) case insn: DECODE_OPERANDS(ops); L_ ## insn ## _BODY:
 #define NEXT goto L_END_DISPATCH
+#ifdef USE_YK
+#define JUMP do { yk_pc = NULL; NEXT; } while (0)
+#else
 #define JUMP NEXT
+#endif
 #define END_DISPATCH L_END_DISPATCH: RETURN_IF_TASK_STOPPED(mrb);}}
 
 #else
@@ -2514,7 +2518,11 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
   } \
 } while (0)
 
+#ifdef USE_YK
+#define DECODE_OPERANDS(ops) do { const mrb_code *pc = insn_pc+1; FETCH_ ## ops (); ci->pc = pc; yk_pc = pc; } while (0)
+#else
 #define DECODE_OPERANDS(ops) do { const mrb_code *pc = ci->pc+1; FETCH_ ## ops (); ci->pc = pc; } while (0)
+#endif
 
 #ifdef USE_YK
 
@@ -2547,13 +2555,16 @@ uint32_t yk_load_w(const mrb_code *pc) { return pc[0]<<16|pc[1]<<8|pc[2]; }
 #define READ_W() (pc+=3, yk_is_interpreting() ? PEEK_W(pc-3) : yk_load_w(pc-3))
 
 #define CALL_CODE_HOOKS() do { \
-  irep = ci->proc->body.irep; \
-  mrb_jit_yk_hook(mrb, irep, ci->pc); \
+  if (!yk_pc) { \
+    irep = ci->proc->body.irep; \
+    yk_pc = ci->pc; \
+  } \
+  mrb_jit_yk_hook(mrb, irep, yk_pc); \
   if (yk_is_interpreting()) { \
-    insn_pc = ci->pc; \
+    insn_pc = yk_pc; \
     insn = BYTECODE_DECODER(*insn_pc); \
   } else { \
-    insn_pc = (const mrb_code*)yk_promote((void*)ci->pc); \
+    insn_pc = (const mrb_code*)yk_promote((void*)yk_pc); \
     insn = BYTECODE_DECODER(yk_load_insn(insn_pc)); \
   } \
   CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
@@ -3396,6 +3407,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
   mrb_code insn;
 #ifdef USE_YK
   const mrb_code *insn_pc;
+  const mrb_code *yk_pc = NULL;
 #endif
   int ai = mrb_gc_arena_save(mrb);
   struct mrb_jmpbuf *prev_jmp = mrb->jmp;
@@ -3422,6 +3434,9 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
 RETRY_TRY_BLOCK:
 
   MRB_TRY(&c_jmp) {
+#ifdef USE_YK
+  yk_pc = NULL;
+#endif
 
   if (mrb_unlikely(mrb->exc)) {
     mrb_gc_arena_restore(mrb, ai);
@@ -3912,7 +3927,11 @@ RETRY_TRY_BLOCK:
         stack_extend(mrb, irep->nregs);
         ci->pc = irep->iseq + mrb_irep_catch_handler_unpack(ch->target);
       }
+#ifdef USE_YK
+      JUMP;
+#else
       NEXT;
+#endif
     }
 
     CASE(OP_MATCHERR, B) {
@@ -4931,7 +4950,11 @@ RETRY_TRY_BLOCK:
         prepare_exec_strcat(mrb, a);
         ci = mrb->c->ci;
         irep = ci->proc->body.irep;
+#ifdef USE_YK
+        JUMP;
+#else
         break;
+#endif
       }
       NEXT;
     }
@@ -5175,7 +5198,11 @@ RETRY_TRY_BLOCK:
       const mrb_code *pc = ci->pc;
       insn = READ_B();
       switch (insn) {
+#ifdef USE_YK
+#define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _1(); ci->pc = pc; yk_pc = pc; goto L_OP_ ## insn ## _BODY;
+#else
 #define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _1(); ci->pc = pc; goto L_OP_ ## insn ## _BODY;
+#endif
 #include <mruby/ops.h>
 #undef OPCODE
       }
@@ -5185,7 +5212,11 @@ RETRY_TRY_BLOCK:
       const mrb_code *pc = ci->pc;
       insn = READ_B();
       switch (insn) {
+#ifdef USE_YK
+#define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _2(); ci->pc = pc; yk_pc = pc; goto L_OP_ ## insn ## _BODY;
+#else
 #define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _2(); ci->pc = pc; goto L_OP_ ## insn ## _BODY;
+#endif
 #include <mruby/ops.h>
 #undef OPCODE
       }
@@ -5195,7 +5226,11 @@ RETRY_TRY_BLOCK:
       const mrb_code *pc = ci->pc;
       insn = READ_B();
       switch (insn) {
+#ifdef USE_YK
+#define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _3(); ci->pc = pc; yk_pc = pc; goto L_OP_ ## insn ## _BODY;
+#else
 #define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _3(); ci->pc = pc; goto L_OP_ ## insn ## _BODY;
+#endif
 #include <mruby/ops.h>
 #undef OPCODE
       }
