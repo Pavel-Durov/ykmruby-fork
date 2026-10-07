@@ -24,14 +24,12 @@ mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
     ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep);
   }
   YkLocation *loc = &((YkLocation*)irep->yk_locs)[(size_t)(pc - irep->iseq)];
-  if (yk_is_interpreting()) {
-    if (pc == irep->iseq) {
-      if (!irep->called) {
-        ((mrb_irep*)irep)->called = TRUE;
-      }
-    }
-    else if (yk_location_is_null(*loc)) {
+  if (pc == irep->iseq && yk_is_interpreting()) {
+    if (irep->called && yk_location_is_null(*loc)) {
       *loc = yk_location_new();
+    }
+    else if (!irep->called) {
+      ((mrb_irep*)irep)->called = TRUE;
     }
   }
   yk_mt_control_point(yk_mt, loc);
