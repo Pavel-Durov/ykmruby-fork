@@ -2558,6 +2558,7 @@ uint32_t yk_load_w(const mrb_code *pc) { return pc[0]<<16|pc[1]<<8|pc[2]; }
   if (!yk_pc) { \
     irep = ci->proc->body.irep; \
     yk_pc = ci->pc; \
+    if (!irep->yk_locs) ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep); \
   } \
   mrb_jit_yk_hook(mrb, irep, yk_pc); \
   if (yk_is_interpreting()) { \
