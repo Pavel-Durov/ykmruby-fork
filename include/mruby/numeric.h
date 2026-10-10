@@ -123,6 +123,16 @@ MRB_API char *mrb_int_to_cstr(char *buf, size_t len, mrb_int n, mrb_int base);
 #endif
 #endif
 
+/* Under yk the __builtin_*_overflow helpers are not used: they lower to
+   llvm.*.with.overflow, whose {result, flag} struct stays live across the
+   branch on the flag and reaches the guard stackmap as one value with two
+   locations, which yk's j2 backend does not support. The portable
+   compare-based helpers below keep result and flag as separate scalars.
+   vm.c wraps them again for the OP_* paths; see YK_INT_OVERFLOW there. */
+#ifdef USE_YK
+#undef MRB_HAVE_TYPE_GENERIC_CHECKED_ARITHMETIC_BUILTINS
+#endif
+
 #ifdef MRB_HAVE_TYPE_GENERIC_CHECKED_ARITHMETIC_BUILTINS
 
 static inline mrb_bool
