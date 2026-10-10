@@ -12,6 +12,18 @@
   #include "TargetConditionals.h"
   #endif
 #endif
+#ifdef USE_YK
+# define MRB_YK_STATIC
+#else
+# define MRB_YK_STATIC static
+#endif
+/* Keep a function out of traces. Required for the allocators: the inlined
+ * libc realloc/malloc calls are not something yk's j2 backend can compile. */
+#ifdef USE_YK
+# define MRB_YK_OUTLINE __attribute__((noinline, yk_outline))
+#else
+# define MRB_YK_OUTLINE
+#endif
 
 #ifdef __cplusplus
 #ifdef MRB_USE_CXX_ABI

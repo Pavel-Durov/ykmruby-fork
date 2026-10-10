@@ -1036,7 +1036,7 @@ mrb_file_join(mrb_state *mrb, mrb_value klass)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry file_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry file_rom_entries[] = {
   MRB_MT_ENTRY(mrb_file_flock,    MRB_SYM(flock), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(mrb_file_atime,    MRB_SYM(_atime), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_file_ctime,    MRB_SYM(_ctime), MRB_ARGS_NONE()),

@@ -20,6 +20,38 @@
 #include <mruby/throw.h>
 #include <mruby/dump.h>
 #include <mruby/internal.h>
+#include <mruby/yk.h>
+
+#ifdef USE_YK
+/* Workaround for yk's "Multi-locations not yet supported" panic.
+   With __builtin_*_overflow, mrb_int_{add,sub,mul}_overflow lower to
+   llvm.{sadd,ssub,smul}.with.overflow: one call returning a {result, flag}
+   struct. OP_MATH branches on the flag while the struct is still live, so it
+   lands in the guard's stackmap as one value with two locations, and yk's
+   smp_to_vloc panics when the trace runs. numeric.h therefore disables the
+   builtins under USE_YK.
+
+   These wrappers additionally take only the flag from the helper and
+   recompute the result with a plain operator for the OP_* paths, so result
+   and flag never share a value LLVM could re-fuse into a with.overflow
+   intrinsic. The result is computed twice; the extra cost is assumed small
+   and has not been measured. Redirected only within this file.
+*/
+#define YK_INT_OVERFLOW(op, sym)                                            \
+  static inline mrb_bool yk_int_##op##_overflow(mrb_int a, mrb_int b, mrb_int *c) \
+  {                                                                         \
+    mrb_int t;                                                              \
+    mrb_bool o = mrb_int_##op##_overflow(a, b, &t);                         \
+    *c = (mrb_int)((mrb_uint)a sym (mrb_uint)b);                            \
+    return o;                                                               \
+  }
+YK_INT_OVERFLOW(add, +)
+YK_INT_OVERFLOW(sub, -)
+YK_INT_OVERFLOW(mul, *)
+#define mrb_int_add_overflow yk_int_add_overflow
+#define mrb_int_sub_overflow yk_int_sub_overflow
+#define mrb_int_mul_overflow yk_int_mul_overflow
+#endif
 
 #ifdef MRB_NO_STDIO
 #if defined(__cplusplus)
@@ -2176,19 +2208,19 @@ prepare_exec_strcat_post_func(mrb_state *mrb, mrb_value self)
    function it would be initialized on the first call instead, behind a
    guard every later call has to pass. */
 MRB_PRESYM_DEFINE_VAR_AND_INITER(prepare_exec_strcat_syms, 1, MRB_SYM(to_s))
-static const mrb_code prepare_exec_strcat_iseq[] = {
+MRB_YK_STATIC const mrb_code prepare_exec_strcat_iseq[] = {
   OP_MOVE,    3, 2,     // OP_MOVE      R3  R2
   OP_SEND,    3, 0, 0,  // OP_SEND      R3  :to_s  n=0|nk=0
   OP_CALL,              // OP_CALL      R0            ; tailcall to prepare_exec_strcat_post_func()
   OP_RETURN,  0         // OP_RETURN    R0            ; unreachable
 };
-static const mrb_irep prepare_exec_strcat_irep = MRB_MAKE_STATIC_IREP(4, 5, prepare_exec_strcat_iseq, prepare_exec_strcat_syms);
+MRB_YK_STATIC const mrb_irep prepare_exec_strcat_irep = MRB_MAKE_STATIC_IREP(4, 5, prepare_exec_strcat_iseq, prepare_exec_strcat_syms);
 /* Both become an mrb_value, whose word-boxed form keeps the type tag in the
    low bits of the pointer; the alignment a static object is given otherwise
    is the compiler's to choose (see the static procs in proc.c and class.c,
    aligned the same way). */
-mrb_alignas(8) static const struct RProc prepare_exec_strcat_proc = MRB_MAKE_STATIC_PROC_FROM_IREP(prepare_exec_strcat_irep);
-mrb_alignas(8) static const struct RProc prepare_exec_strcat_post_proc = MRB_MAKE_STATIC_PROC_FROM_FUNC(prepare_exec_strcat_post_func);
+mrb_alignas(8) MRB_YK_STATIC const struct RProc prepare_exec_strcat_proc = MRB_MAKE_STATIC_PROC_FROM_IREP(prepare_exec_strcat_irep);
+mrb_alignas(8) MRB_YK_STATIC const struct RProc prepare_exec_strcat_post_proc = MRB_MAKE_STATIC_PROC_FROM_FUNC(prepare_exec_strcat_post_func);
 
 static mrb_bool
 prepare_exec_strcat(mrb_state *mrb, uint32_t a)
@@ -2449,7 +2481,11 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 #define INIT_DISPATCH for (;;) { CALL_CODE_HOOKS(); switch (insn) {
 #define CASE(insn,ops) case insn: DECODE_OPERANDS(ops); L_ ## insn ## _BODY:
 #define NEXT goto L_END_DISPATCH
+#ifdef USE_YK
+#define JUMP do { yk_pc = NULL; NEXT; } while (0)
+#else
 #define JUMP NEXT
+#endif
 #define END_DISPATCH L_END_DISPATCH: RETURN_IF_TASK_STOPPED(mrb);}}
 
 #else
@@ -2476,8 +2512,62 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
   } \
 } while (0)
 
+#ifdef USE_YK
+#define DECODE_OPERANDS(ops) do { const mrb_code *pc = insn_pc+1; FETCH_ ## ops (); ci->pc = pc; yk_pc = pc; } while (0)
+#else
 #define DECODE_OPERANDS(ops) do { const mrb_code *pc = ci->pc+1; FETCH_ ## ops (); ci->pc = pc; } while (0)
+#endif
+
+#ifdef USE_YK
+
+/* Idempotent bytecode loads: while tracing, yk replaces the call with its
+   result, keyed on the arguments. `gen` is mrb_yk_iseq_gen, promoted once per
+   frame entry in CALL_CODE_HOOKS, so a freed-and-reused iseq address gets a
+   new key and old traces cannot read stale bytecode. The asm keeps `gen` a
+   real argument: LTO would otherwise drop it as dead and it would vanish
+   from the key. */
+#define YK_KEEP_ARG(x) __asm__ volatile("" : : "r"(x))
+__attribute__((yk_idempotent, noinline))
+mrb_code yk_load_insn(const mrb_code *pc, uint32_t gen) {
+  YK_KEEP_ARG(gen);
+  __asm__ volatile("" : "+r,m"(pc) : : "memory");
+  return *pc;
+}
+
+__attribute__((yk_idempotent, noinline))
+uint32_t yk_load_b(const mrb_code *pc, uint32_t gen) { YK_KEEP_ARG(gen); return pc[0]; }
+__attribute__((yk_idempotent, noinline))
+uint32_t yk_load_s(const mrb_code *pc, uint32_t gen) { YK_KEEP_ARG(gen); return pc[0]<<8|pc[1]; }
+__attribute__((yk_idempotent, noinline))
+uint32_t yk_load_w(const mrb_code *pc, uint32_t gen) { YK_KEEP_ARG(gen); return pc[0]<<16|pc[1]<<8|pc[2]; }
+
+#undef READ_B
+#undef READ_S
+#undef READ_W
+#define READ_B() (yk_is_interpreting() ? PEEK_B(pc++) : yk_load_b(pc++, yk_gen))
+#define READ_S() (pc+=2, yk_is_interpreting() ? PEEK_S(pc-2) : yk_load_s(pc-2, yk_gen))
+#define READ_W() (pc+=3, yk_is_interpreting() ? PEEK_W(pc-3) : yk_load_w(pc-3, yk_gen))
+
+#define CALL_CODE_HOOKS() do { \
+  if (!yk_pc) { \
+    irep = ci->proc->body.irep; \
+    yk_pc = ci->pc; \
+    yk_gen = yk_is_interpreting() ? mrb_yk_iseq_gen : yk_promote(mrb_yk_iseq_gen); \
+    if (!irep->yk_locs) ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep); \
+  } \
+  mrb_jit_yk_hook(mrb, irep, yk_pc); \
+  if (yk_is_interpreting()) { \
+    insn_pc = yk_pc; \
+    insn = BYTECODE_DECODER(*insn_pc); \
+  } else { \
+    insn_pc = (const mrb_code*)yk_promote((void*)yk_pc); \
+    insn = BYTECODE_DECODER(yk_load_insn(insn_pc, yk_gen)); \
+  } \
+  CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
+} while (0)
+#else
 #define CALL_CODE_HOOKS() do { insn = BYTECODE_DECODER(*ci->pc); CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); } while (0)
+#endif // End of USE_YK
 
 #ifdef MRB_USE_TASK_SCHEDULER
 /* TRUE when the current context is executing across a C call boundary, i.e.
@@ -3311,6 +3401,11 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
   /* mrb_assert(MRB_PROC_CFUNC_P(begin_proc)) */
   const mrb_irep *irep = begin_proc->body.irep;
   mrb_code insn;
+#ifdef USE_YK
+  const mrb_code *insn_pc;
+  const mrb_code *yk_pc = NULL;
+  uint32_t yk_gen = 0;
+#endif
   int ai = mrb_gc_arena_save(mrb);
   struct mrb_jmpbuf *prev_jmp = mrb->jmp;
   struct mrb_jmpbuf c_jmp;
@@ -3319,7 +3414,6 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
   uint16_t c;
   mrb_sym mid;
   const struct mrb_irep_catch_handler *ch;
-
 #ifndef MRB_USE_VM_SWITCH_DISPATCH
   static const void * const optable[] = {
 #define OPCODE(x,_) &&L_OP_ ## x,
@@ -3337,6 +3431,9 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
 RETRY_TRY_BLOCK:
 
   MRB_TRY(&c_jmp) {
+#ifdef USE_YK
+  yk_pc = NULL;
+#endif
 
   if (mrb_unlikely(mrb->exc)) {
     mrb_gc_arena_restore(mrb, ai);
@@ -3801,7 +3898,11 @@ RETRY_TRY_BLOCK:
         stack_extend(mrb, irep->nregs);
         ci->pc = irep->iseq + mrb_irep_catch_handler_unpack(ch->target);
       }
+#ifdef USE_YK
+      JUMP;
+#else
       NEXT;
+#endif
     }
 
     CASE(OP_MATCHERR, B) {
@@ -4820,7 +4921,11 @@ RETRY_TRY_BLOCK:
         prepare_exec_strcat(mrb, a);
         ci = mrb->c->ci;
         irep = ci->proc->body.irep;
+#ifdef USE_YK
+        JUMP;
+#else
         break;
+#endif
       }
       NEXT;
     }
@@ -5064,7 +5169,11 @@ RETRY_TRY_BLOCK:
       const mrb_code *pc = ci->pc;
       insn = READ_B();
       switch (insn) {
+#ifdef USE_YK
+#define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _1(); ci->pc = pc; yk_pc = pc; goto L_OP_ ## insn ## _BODY;
+#else
 #define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _1(); ci->pc = pc; goto L_OP_ ## insn ## _BODY;
+#endif
 #include <mruby/ops.h>
 #undef OPCODE
       }
@@ -5074,7 +5183,11 @@ RETRY_TRY_BLOCK:
       const mrb_code *pc = ci->pc;
       insn = READ_B();
       switch (insn) {
+#ifdef USE_YK
+#define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _2(); ci->pc = pc; yk_pc = pc; goto L_OP_ ## insn ## _BODY;
+#else
 #define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _2(); ci->pc = pc; goto L_OP_ ## insn ## _BODY;
+#endif
 #include <mruby/ops.h>
 #undef OPCODE
       }
@@ -5084,7 +5197,11 @@ RETRY_TRY_BLOCK:
       const mrb_code *pc = ci->pc;
       insn = READ_B();
       switch (insn) {
+#ifdef USE_YK
+#define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _3(); ci->pc = pc; yk_pc = pc; goto L_OP_ ## insn ## _BODY;
+#else
 #define OPCODE(insn,ops) case OP_ ## insn: FETCH_ ## ops ## _3(); ci->pc = pc; goto L_OP_ ## insn ## _BODY;
+#endif
 #include <mruby/ops.h>
 #undef OPCODE
       }

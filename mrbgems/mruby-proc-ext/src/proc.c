@@ -268,7 +268,7 @@ mrb_proc_parameters(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry proc_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry proc_ext_rom_entries[] = {
   MRB_MT_ENTRY(proc_inspect,         MRB_SYM(inspect),      MRB_ARGS_NONE()),
   MRB_MT_ENTRY(proc_lambda_p,        MRB_SYM_Q(lambda),     MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_proc_parameters,  MRB_SYM(parameters),   MRB_ARGS_NONE()),

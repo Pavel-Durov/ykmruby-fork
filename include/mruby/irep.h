@@ -77,6 +77,9 @@ struct mrb_irep {
   uint16_t plen, slen;
   uint16_t rlen;
   uint16_t refcnt;
+#ifdef USE_YK
+  void *yk_locs;
+#endif
 };
 
 #define MRB_ISEQ_NO_FREE 1

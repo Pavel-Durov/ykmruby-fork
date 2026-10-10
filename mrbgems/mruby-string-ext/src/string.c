@@ -2546,7 +2546,7 @@ str_prepend(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry string_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry string_ext_rom_entries[] = {
   MRB_MT_ENTRY(mrb_str_dump,        MRB_SYM(dump),            MRB_ARGS_NONE()),
   MRB_MT_ENTRY(str_swapcase_bang,   MRB_SYM_B(swapcase),      MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_str_slice_bang,  MRB_SYM_B(slice),         MRB_ARGS_ARG(1,1)),

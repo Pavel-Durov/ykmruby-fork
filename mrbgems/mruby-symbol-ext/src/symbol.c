@@ -89,7 +89,7 @@ mrb_sym_slice(mrb_state *mrb, mrb_value self)
                           MRB_SYM(slice), argc, argv);
 }
 
-static const mrb_mt_entry symbol_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry symbol_ext_rom_entries[] = {
   MRB_MT_ENTRY(mrb_sym_length, MRB_SYM(length), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_sym_length, MRB_SYM(size), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_sym_slice,  MRB_SYM(slice), MRB_ARGS_ANY()),
