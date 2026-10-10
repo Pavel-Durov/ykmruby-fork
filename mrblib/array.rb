@@ -106,3 +106,37 @@ class Array
   # ISO 15.2.12.3
   include Enumerable
 end
+
+class Array
+  alias __c_initialize initialize
+
+  # Array.new(n) { ... } used to run entirely in C: mrb_ary_init loops over
+  # the elements and calls mrb_yield for each one. mrb_yield does not return
+  # to the interpreter frame that called Array.new; it starts a fresh
+  # mrb_vm_exec for the block body and returns to C when it finishes.
+  #
+  # Under the yk JIT every mrb_vm_exec instance has its own control point, so
+  # the C loop made the tracer stop at the C frame, enter the JIT once per
+  # element for a tiny trace of the block body, and exit again. On the AWFY
+  # Storage benchmark that was 5.46M trace entries per iteration and most of
+  # the slowdown against plain mruby. Outlining mrb_ary_init cannot help: the
+  # cost is inside the nested mrb_vm_exec, not in the loop around it.
+  #
+  # Looping here instead makes each yield an ordinary bytecode send inside
+  # the same mrb_vm_exec, so the loop, the yield and the block body land in
+  # one trace. C still validates the size and sets the length (and handles
+  # the block-less forms unchanged); only the per-element fill moved to Ruby.
+  def initialize(size = 0, obj = nil, &blk)
+    # Only the common Integer+block case is handled here; everything else
+    # (no block, Array/Float/bad sizes) keeps the exact C behaviour.
+    return __c_initialize(size, obj, &blk) unless blk && size.kind_of?(Integer)
+    __c_initialize(size)  # sets the length (nil-filled)
+    n = self.size
+    i = 0
+    while i < n
+      self[i] = yield i
+      i += 1
+    end
+    self
+  end
+end

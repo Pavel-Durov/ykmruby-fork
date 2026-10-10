@@ -281,7 +281,7 @@ mrb_static_assert(MRB_GC_RED <= GC_COLOR_MASK);
 static size_t incremental_gc_finish(mrb_state *mrb, mrb_gc *gc);
 static size_t incremental_gc_run(mrb_state *mrb, mrb_gc *gc);
 
-MRB_API void*
+MRB_YK_OUTLINE MRB_API void*
 mrb_realloc_simple(mrb_state *mrb, void *p,  size_t len)
 {
   void *p2;
@@ -365,7 +365,7 @@ mrb_realloc_simple(mrb_state *mrb, void *p,  size_t len)
   return p2;
 }
 
-MRB_API void*
+MRB_YK_OUTLINE MRB_API void*
 mrb_realloc(mrb_state *mrb, void *p, size_t len)
 {
   void *p2;
@@ -377,19 +377,19 @@ mrb_realloc(mrb_state *mrb, void *p, size_t len)
   return p2;
 }
 
-MRB_API void*
+MRB_YK_OUTLINE MRB_API void*
 mrb_malloc(mrb_state *mrb, size_t len)
 {
   return mrb_realloc(mrb, 0, len);
 }
 
-MRB_API void*
+MRB_YK_OUTLINE MRB_API void*
 mrb_malloc_simple(mrb_state *mrb, size_t len)
 {
   return mrb_realloc_simple(mrb, 0, len);
 }
 
-MRB_API void*
+MRB_YK_OUTLINE MRB_API void*
 mrb_calloc(mrb_state *mrb, size_t nelem, size_t len)
 {
   void *p;
@@ -410,7 +410,7 @@ mrb_calloc(mrb_state *mrb, size_t nelem, size_t len)
   return p;
 }
 
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_free(mrb_state *mrb, void *p)
 {
   mrb_basic_alloc_func(p, 0);
@@ -504,7 +504,12 @@ mrb_gc_add_region(mrb_state *mrb, void *start, size_t size)
   /* align base to pointer size */
   uintptr_t align = sizeof(void*);
   uintptr_t offset = ((uintptr_t)base + align - 1) & ~(align - 1);
-  size -= (size_t)(offset - (uintptr_t)base);
+  size_t pad = (size_t)(offset - (uintptr_t)base);
+  /* A buffer smaller than the alignment padding leaves nothing behind: bail
+     out before the subtraction, which would otherwise wrap `size` and carve
+     pages out past the end of the region. */
+  if (size < pad) return 0;
+  size -= pad;
   base = (uint8_t*)offset;
 
   page_count = (uint16_t)(size / sizeof(mrb_heap_page));
@@ -666,7 +671,7 @@ gc_protect(mrb_state *mrb, mrb_gc *gc, struct RBasic *p)
 }
 
 /* mrb_gc_protect() leaves the object in the arena */
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_gc_protect(mrb_state *mrb, mrb_value obj)
 {
   if (mrb_immediate_p(obj)) return;
@@ -804,17 +809,28 @@ mrb_obj_alloc_core(mrb_state *mrb, enum mrb_vtype ttype, struct RClass *cls)
          cannot distinguish "full of garbage" (reclaim!) from "full of live
          data" (grow!). live_after_mark from the last completed cycle is the
          garbage-free estimate of the true live set: sweep decrements it as
-         objects are freed. Only reclaim when the accounting shows real slack
-         (live well below capacity); otherwise a working set that is genuinely
-         growing would collect before every page-add and just burn time, so
-         grow directly. Walking the page list here is fine: growth events are
-         rare and the walk is a few pointer hops per page. (mrb_full_gc() is
-         also a no-op while GC is disabled or iterating; we grow then, too.) */
+         objects are freed. Only reclaim when the accounting shows real slack;
+         otherwise a working set that is genuinely growing (or just sitting
+         near capacity) would collect before every page-add and just burn
+         time re-marking a heap that is still mostly live, so grow directly.
+         Walking the page list here is fine: growth events are rare and the
+         walk is a few pointer hops per page. (mrb_full_gc() is also a no-op
+         while GC is disabled or iterating; we grow then, too.)
+
+         How much slack is "real" is a tenth of the heap, which settles the
+         heap at about 1.11 times the live set however big that is, but never
+         less than the half page the absolute test asked for before. The two
+         cross at five pages: taking the tenth alone below that asks for LESS
+         slack than the old test did, and a small heap of mostly garbage --
+         the size mruby runs at, and the case the reclaim exists for -- then
+         collects where it used to grow. */
       size_t capacity = 0;
       for (mrb_heap_page *page = gc->heaps; page; page = page->next) {
         capacity += MRB_HEAP_PAGE_SIZE;
       }
-      if (gc->live_after_mark + MRB_HEAP_PAGE_SIZE/2 < capacity) {
+      size_t slack = capacity/10;
+      if (slack < MRB_HEAP_PAGE_SIZE/2) slack = MRB_HEAP_PAGE_SIZE/2;
+      if (gc->live_after_mark + slack < capacity) {
         mrb_full_gc(mrb);
       }
     }
@@ -841,7 +857,7 @@ mrb_obj_alloc_core(mrb_state *mrb, enum mrb_vtype ttype, struct RClass *cls)
   return &p->as.basic;
 }
 
-MRB_API struct RBasic*
+MRB_YK_OUTLINE MRB_API struct RBasic*
 mrb_obj_alloc(mrb_state *mrb, enum mrb_vtype ttype, struct RClass *cls)
 {
   if (cls) {
@@ -993,6 +1009,15 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
       mrb_gc_mark(mrb, (struct RBasic*)p->upper);
       mrb_gc_mark(mrb, (struct RBasic*)p->e.env);
       children+=2;
+#ifdef MRB_USE_REFINEMENTS
+      {
+        uint32_t idx = MRB_PROC_REFSCOPE(p);
+        if (idx) {
+          mrb_gc_mark(mrb, (struct RBasic*)mrb_refscope_at(mrb, idx));
+          children++;
+        }
+      }
+#endif
     }
     break;
 
@@ -1175,7 +1200,7 @@ gc_mark_children(mrb_state *mrb, mrb_gc *gc, struct RBasic *obj)
   return children;
 }
 
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_gc_mark(mrb_state *mrb, struct RBasic *obj)
 {
   if (obj == 0) return;
@@ -1638,6 +1663,11 @@ incremental_gc(mrb_state *mrb, mrb_gc *gc, size_t limit)
       uint64_t fm0 = gc_prof_now_us();
 #endif
       final_marking_phase(mrb, gc);
+#ifdef MRB_USE_REFINEMENTS
+      /* marking is complete: a refinement scope no proc marked is dropped
+         from the weak table before the sweep frees it */
+      mrb_gc_clear_dead_refscopes(mrb);
+#endif
 #ifdef MRB_GC_PROFILE
       {
         uint64_t fmdt = gc_prof_now_us() - fm0;
@@ -1854,7 +1884,7 @@ incremental_gc_run(mrb_state *mrb, mrb_gc *gc)
  * task scheduler instead (GC.scheduler_driven = true, auto_step off), this
  * call silently no-ops. An embedder that needs unconditional collection must
  * use mrb_full_gc(). */
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_incremental_gc(mrb_state *mrb)
 {
   mrb_gc *gc = &mrb->gc;
@@ -1871,7 +1901,7 @@ mrb_incremental_gc(mrb_state *mrb)
 }
 
 /* Perform a full gc cycle */
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_full_gc(mrb_state *mrb)
 {
   mrb_gc *gc = &mrb->gc;
@@ -1937,7 +1967,7 @@ mrb_garbage_collect(mrb_state *mrb)
  *   Paint obj(Black) -> value(White) to obj(Black) -> value(Gray).
  */
 
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_field_write_barrier(mrb_state *mrb, struct RBasic *obj, struct RBasic *value)
 {
   mrb_gc *gc = &mrb->gc;
@@ -1968,7 +1998,7 @@ mrb_field_write_barrier(mrb_state *mrb, struct RBasic *obj, struct RBasic *value
  *   e.g. Set element on Array.
  */
 
-MRB_API void
+MRB_YK_OUTLINE MRB_API void
 mrb_write_barrier(mrb_state *mrb, struct RBasic *obj)
 {
   mrb_gc *gc = &mrb->gc;
@@ -2075,6 +2105,9 @@ gc_interval_ratio_set(mrb_state *mrb, mrb_value obj)
   mrb_int ratio;
 
   mrb_get_args(mrb, "i", &ratio);
+  if (ratio < 0 || ratio > INT_MAX) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "interval_ratio out of range");
+  }
   mrb->gc.interval_ratio = (int)ratio;
   return mrb_nil_value();
 }
@@ -2109,7 +2142,7 @@ gc_step_ratio_set(mrb_state *mrb, mrb_value obj)
   mrb_int ratio;
 
   mrb_get_args(mrb, "i", &ratio);
-  if (ratio <= 0) {
+  if (ratio <= 0 || ratio > INT_MAX) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "step_ratio must be positive");
   }
   mrb->gc.step_ratio = (int)ratio;

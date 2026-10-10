@@ -13,11 +13,11 @@
 #include <mruby/hash.h>
 #include <mruby/internal.h>
 
-static const mrb_code call_iseq[] = {
+MRB_YK_STATIC const mrb_code call_iseq[] = {
   OP_CALL,
 };
 
-static const mrb_irep call_irep = {
+MRB_YK_STATIC const mrb_irep call_irep = {
   0,                                   /* nlocals */
   2,                                   /* nregs */
   0,                                   /* clen */
@@ -36,7 +36,7 @@ static const mrb_irep call_irep = {
 };
 
 mrb_alignas(8)
-static const struct RProc call_proc = {
+MRB_YK_STATIC const struct RProc call_proc = {
   NULL, MRB_TT_PROC, MRB_GC_RED, MRB_OBJ_IS_FROZEN, MRB_PROC_SCOPE | MRB_PROC_STRICT,
   { &call_irep }, NULL, { NULL }
 };
@@ -110,6 +110,42 @@ mrb_vm_definee_class(mrb_state *mrb, mrb_callinfo *ci)
   return NULL;
 }
 
+#ifdef MRB_USE_REFINEMENTS
+/* The refinements active for code running in the frame: the scope the
+   nearest proc on the chain carries.  A scope of its own (MRB_PROC_CREF)
+   ends the walk, so a method body sees what it copied at its definition and
+   no `using` written after it; a block carries none and reads on up to the
+   scope it was written in, so it sees a `using` written after the block, as
+   CRuby's does. */
+struct RArray*
+mrb_proc_refinements(mrb_state *mrb, const struct RProc *p)
+{
+  while (p && !MRB_PROC_CFUNC_P(p) && p->gc_color != MRB_GC_RED) {
+    uint32_t idx = MRB_PROC_REFSCOPE(p);
+    if (idx) return mrb_refscope_at(mrb, idx);
+    if (MRB_PROC_CREF_P(p)) break;
+    p = p->upper;
+  }
+  return NULL;
+}
+
+struct RArray*
+mrb_vm_refinements(mrb_state *mrb, const mrb_callinfo *ci)
+{
+  return mrb_proc_refinements(mrb, ci->proc);
+}
+
+/* Gives `p` the refinements active in the frame it is made in, as a method
+   body or class body copies its scope's at creation. */
+static void
+proc_copy_refscope(mrb_state *mrb, struct RProc *p, mrb_callinfo *ci)
+{
+  if (mrb->refscopes_len == 0) return;
+  struct RArray *scope = mrb_vm_refinements(mrb, ci);
+  if (scope) mrb_proc_set_refscope(mrb, p, scope);
+}
+#endif
+
 struct RProc*
 mrb_proc_new(mrb_state *mrb, const mrb_irep *irep)
 {
@@ -155,8 +191,22 @@ mrb_method_proc_new(mrb_state *mrb, const mrb_irep *irep)
     p->e.target_class = given;
     p->flags |= MRB_PROC_GIVEN;
   }
+#ifdef MRB_USE_REFINEMENTS
+  proc_copy_refscope(mrb, p, mrb->c->ci);
+#endif
   return p;
 }
+
+#ifdef MRB_USE_REFINEMENTS
+/* The proc for a class or module body: it copies the scope around it. */
+struct RProc*
+mrb_scope_proc_new(mrb_state *mrb, const mrb_irep *irep)
+{
+  struct RProc *p = mrb_proc_new(mrb, irep);
+  proc_copy_refscope(mrb, p, mrb->c->ci);
+  return p;
+}
+#endif
 
 struct REnv*
 mrb_env_new(mrb_state *mrb, struct mrb_context *c, mrb_callinfo *ci, int nstacks, mrb_value *stack, struct RClass *tc)
@@ -702,7 +752,7 @@ mrb_proc_merge_lvar(mrb_state *mrb, mrb_irep *irep, struct REnv *env, int num, c
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry proc_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry proc_rom_entries[] = {
   MRB_MT_ENTRY(mrb_proc_init_copy, MRB_SYM(initialize_copy), MRB_ARGS_REQ(1) | MRB_MT_PRIVATE),
   MRB_MT_ENTRY(proc_arity,         MRB_SYM(arity),        MRB_ARGS_NONE()),  /* 15.2.17.4.2 */
   MRB_MT_ENTRY(proc_eql,           MRB_OPSYM(eq), MRB_ARGS_REQ(1)),

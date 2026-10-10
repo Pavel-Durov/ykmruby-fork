@@ -593,8 +593,8 @@ mrb_float_to_str(mrb_state *mrb, mrb_value flo, const char *fmt)
  *     3.25.to_s  #=> 3.25
  */
 
-static mrb_value
-flo_to_s(mrb_state *mrb, mrb_value flt)
+mrb_value
+mrb_flo_to_s(mrb_state *mrb, mrb_value flt)
 {
   mrb_float f = mrb_float(flt);
   mrb_value str;
@@ -2560,7 +2560,7 @@ flo_hash(mrb_state *mrb, mrb_value flo)
 #endif
 
 /* ------------------------------------------------------------------------*/
-static const mrb_mt_entry numeric_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry numeric_rom_entries[] = {
   MRB_MT_ENTRY(num_finite_p,   MRB_SYM_Q(finite), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(num_infinite_p, MRB_SYM_Q(infinite), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(num_eql,        MRB_SYM_Q(eql), MRB_ARGS_REQ(1)),  /* 15.2.8.3.16 */
@@ -2586,7 +2586,7 @@ int_s_ensure(mrb_state *mrb, mrb_value self)
   return mrb_ensure_int_type(mrb, val);
 }
 
-static const mrb_mt_entry integer_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry integer_rom_entries[] = {
   MRB_MT_ENTRY(int_pow,              MRB_OPSYM(pow),    MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(num_cmp,              MRB_OPSYM(cmp),    MRB_ARGS_REQ(1)),  /* 15.2.8.3.1  */
   MRB_MT_ENTRY(num_lt,               MRB_OPSYM(lt),     MRB_ARGS_REQ(1)),
@@ -2625,7 +2625,7 @@ static const mrb_mt_entry integer_rom_entries[] = {
 };
 
 #ifndef MRB_NO_FLOAT
-static const mrb_mt_entry float_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry float_rom_entries[] = {
   MRB_MT_ENTRY(flo_pow,        MRB_OPSYM(pow), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(flo_div,        MRB_OPSYM(div), MRB_ARGS_REQ(1)),  /* 15.2.9.3.6 */
   MRB_MT_ENTRY(flo_div,        MRB_SYM(quo), MRB_ARGS_REQ(1)),  /* 15.2.7.4.5(x) */
@@ -2650,8 +2650,8 @@ static const mrb_mt_entry float_rom_entries[] = {
   MRB_MT_ENTRY(flo_to_i,       MRB_SYM(to_i),     MRB_ARGS_NONE()),  /* 15.2.9.3.14 */
   MRB_MT_ENTRY(flo_truncate,   MRB_SYM(truncate), MRB_ARGS_OPT(1)),  /* 15.2.9.3.15 */
   MRB_MT_ENTRY(flo_divmod,     MRB_SYM(divmod), MRB_ARGS_REQ(1)),
-  MRB_MT_ENTRY(flo_to_s,       MRB_SYM(to_s),     MRB_ARGS_NONE()),  /* 15.2.9.3.16(x) */
-  MRB_MT_ENTRY(flo_to_s,       MRB_SYM(inspect),  MRB_ARGS_NONE()),
+  MRB_MT_ENTRY(mrb_flo_to_s,       MRB_SYM(to_s),     MRB_ARGS_NONE()),  /* 15.2.9.3.16(x) */
+  MRB_MT_ENTRY(mrb_flo_to_s,       MRB_SYM(inspect),  MRB_ARGS_NONE()),
   MRB_MT_ENTRY(flo_nan_p,      MRB_SYM_Q(nan),    MRB_ARGS_NONE()),
   MRB_MT_ENTRY(flo_abs,        MRB_SYM(abs),      MRB_ARGS_NONE()),  /* 15.2.7.4.3 */
   MRB_MT_ENTRY(flo_hash,       MRB_SYM(hash),     MRB_ARGS_NONE()),

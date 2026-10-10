@@ -412,9 +412,13 @@ shaped_iv_foreach(mrb_state *mrb, struct RObject *obj,
   mrb_shaped_iv *siv = (mrb_shaped_iv*)obj->iv;
   if (!siv) return;
   mrb_iv_shape *shape = siv->shape;
-  if (shape->count == 0) return;
+  int count = shape->count;
+  if (count == 0) return;
 
-  /* reconstruct keys from parent chain */
+  /* reconstruct keys from parent chain: the shape tree is never freed while
+     the VM is alive (mrb_free_shape() tears it all down at shutdown), and
+     nothing here calls back into Ruby, so this part cannot be invalidated
+     by what follows. */
   mrb_sym keys[MRB_SHAPE_MAX_IVS];
   mrb_iv_shape *s = shape;
   while (s->count > 0) {
@@ -422,9 +426,29 @@ shaped_iv_foreach(mrb_state *mrb, struct RObject *obj,
     s = s->parent;
   }
 
-  for (int i = 0; i < shape->count; i++) {
-    if (!mrb_undef_p(siv->values[i])) {
-      if ((*func)(mrb, keys[i], siv->values[i], p) != 0) return;
+  /* `func` can run arbitrary Ruby: mrb_obj_inspect() dispatches to a
+     user-defined #inspect on each value, which can add or remove an
+     instance variable on `obj` itself. Either one frees this `siv` out
+     from under the loop, growing it (shaped_iv_set(), a wider block, the
+     old one freed) or de-shaping it (shaped_to_iv_tbl(), called from
+     mrb_iv_remove(), to a plain iv_tbl). Reading `siv->values[i]` again
+     for the next key is then a use-after-free (GHSA-j6fq-xj4w-877x).
+     `obj->iv` names whichever block is current, so unchanged since the
+     loop started is exactly "nothing freed this one yet": the fast path
+     below stays in one comparison's reach of what the loop cost before
+     this fix, and only a key affected by a mutating callback pays for
+     mrb_obj_iv_get()/_defined() re-deriving it from the object's current
+     representation, shaped or not. */
+  const iv_tbl *orig = obj->iv;
+  for (int i = 0; i < count; i++) {
+    if (obj->iv == orig) {
+      if (!mrb_undef_p(siv->values[i])) {
+        if ((*func)(mrb, keys[i], siv->values[i], p) != 0) return;
+      }
+    }
+    else if (mrb_obj_iv_defined(mrb, obj, keys[i])) {
+      mrb_value v = mrb_obj_iv_get(mrb, obj, keys[i]);
+      if ((*func)(mrb, keys[i], v, p) != 0) return;
     }
   }
 }
@@ -472,12 +496,19 @@ mrb_init_shape(mrb_state *mrb)
   mrb->root_shape = shape_root(mrb);
 }
 
+#ifdef USE_YK
+uint32_t mrb_yk_shape_epoch;
+#endif
+
 void
 mrb_free_shape(mrb_state *mrb)
 {
   if (mrb->root_shape) {
     shape_free_tree(mrb, mrb->root_shape);
     mrb->root_shape = NULL;
+#ifdef USE_YK
+    mrb_yk_shape_epoch++;
+#endif
   }
 }
 
@@ -1663,7 +1694,7 @@ gv_virtual_free(mrb_state *mrb, void *p)
   mrb_free(mrb, p);
 }
 
-static const mrb_data_type gv_virtual_type = { "gv_virtual", gv_virtual_free };
+MRB_YK_STATIC const mrb_data_type gv_virtual_type = { "gv_virtual", gv_virtual_free };
 
 static const struct gv_virtual*
 gv_virtual_check(mrb_value v)

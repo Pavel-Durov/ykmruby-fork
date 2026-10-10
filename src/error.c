@@ -178,7 +178,7 @@ exc_set_backtrace(mrb_state *mrb, mrb_value exc)
   return backtrace;
 }
 
-void
+MRB_YK_OUTLINE void
 mrb_exc_set(mrb_state *mrb, mrb_value exc)
 {
   if (mrb_nil_p(exc)) {
@@ -219,7 +219,7 @@ exc_throw(mrb_state *mrb, mrb_value exc)
  * mrb: The mruby state.
  * exc: The exception object to raise.
  */
-MRB_API mrb_noreturn void
+MRB_YK_OUTLINE MRB_API mrb_noreturn void
 mrb_exc_raise(mrb_state *mrb, mrb_value exc)
 {
   if (mrb_break_p(exc)) {
@@ -244,7 +244,7 @@ mrb_exc_raise(mrb_state *mrb, mrb_value exc)
  * c:   The exception class to instantiate.
  * msg: The C string message for the exception.
  */
-MRB_API mrb_noreturn void
+MRB_YK_OUTLINE MRB_API mrb_noreturn void
 mrb_raise(mrb_state *mrb, struct RClass *c, const char *msg)
 {
   mrb_exc_raise(mrb, mrb_exc_new_str(mrb, c, mrb_str_new_cstr(mrb, msg)));
@@ -360,6 +360,7 @@ mrb_vformat(mrb_state *mrb, const char *format, va_list ap)
           obj = va_arg(ap, mrb_value);
         L_cat_obj:
           str = (inspect ? mrb_inspect : mrb_obj_as_string)(mrb, obj);
+        L_cat_str:
           if (mrb_type(str) != MRB_TT_STRING) {
             chars = "void (no string conversion)";
             len = strlen(chars);
@@ -372,8 +373,13 @@ mrb_vformat(mrb_state *mrb, const char *format, va_list ap)
         case 'C':
           cls = va_arg(ap, struct RClass*);
         L_cat_class:
-          obj = mrb_obj_value(cls);
-          goto L_cat_obj;
+          /* A class is named here by its class path, not by what it answers
+             to to_s: a message is built while an exception is being raised,
+             and naming the class is not a reason to run Ruby there. It is
+             also what `Module#inspect` answers, so `%!C` needs no arm of its
+             own. */
+          str = mrb_mod_to_s(mrb, mrb_obj_value(cls));
+          goto L_cat_str;
         case 'T':
           obj = va_arg(ap, mrb_value);
         L_cat_real_class_of:
@@ -453,7 +459,7 @@ error_va(mrb_state *mrb, struct RClass *c, const char *fmt, va_list ap)
  * fmt: The format string for the exception message.
  * ...: Variable arguments for the format string.
  */
-MRB_API mrb_noreturn void
+MRB_YK_OUTLINE MRB_API mrb_noreturn void
 mrb_raisef(mrb_state *mrb, struct RClass *c, const char *fmt, ...)
 {
   va_list ap;
@@ -911,7 +917,7 @@ mrb_check_error(mrb_state *mrb)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry exception_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry exception_rom_entries[] = {
   MRB_MT_ENTRY(exc_exception,     MRB_SYM(exception), MRB_ARGS_OPT(1)),
   MRB_MT_ENTRY(exc_initialize, MRB_SYM(initialize),    MRB_ARGS_OPT(1) | MRB_MT_PRIVATE),
   MRB_MT_ENTRY(exc_to_s,          MRB_SYM(to_s),        MRB_ARGS_NONE()),
