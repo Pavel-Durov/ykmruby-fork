@@ -418,7 +418,7 @@ hash_merge(mrb_state *mrb, mrb_value hash)
   return hash;
 }
 
-static const mrb_mt_entry hash_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry hash_ext_rom_entries[] = {
   MRB_MT_ENTRY(hash_values_at, MRB_SYM(values_at), MRB_ARGS_ANY()),
   MRB_MT_ENTRY(hash_slice,     MRB_SYM(slice), MRB_ARGS_ANY()),
   MRB_MT_ENTRY(hash_slice_bang, MRB_SYM_B(slice), MRB_ARGS_ANY()),

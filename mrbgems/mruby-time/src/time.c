@@ -1659,7 +1659,7 @@ time_utc_offset(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry time_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry time_rom_entries[] = {
   MRB_MT_ENTRY(time_hash,       MRB_SYM(hash),            MRB_ARGS_NONE()),
   MRB_MT_ENTRY(time_eq,         MRB_SYM_Q(eql),           MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(time_eq,         MRB_OPSYM(eq),            MRB_ARGS_REQ(1)),

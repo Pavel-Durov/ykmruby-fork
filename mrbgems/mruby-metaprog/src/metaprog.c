@@ -727,7 +727,7 @@ mrb_mod_s_nesting(mrb_state *mrb, mrb_value mod)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry metaprog_krn_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry metaprog_krn_rom_entries[] = {
   MRB_MT_ENTRY(mrb_f_global_variables, MRB_SYM(global_variables),                        MRB_ARGS_NONE() | MRB_MT_PRIVATE),  /* 15.3.1.3.14 (15.3.1.2.4) */
   MRB_MT_ENTRY(mrb_local_variables, MRB_SYM(local_variables),                         MRB_ARGS_NONE() | MRB_MT_PRIVATE),  /* 15.3.1.3.28 (15.3.1.2.7) */
   MRB_MT_ENTRY(mrb_singleton_class,       MRB_SYM(singleton_class),          MRB_ARGS_NONE()),
@@ -747,12 +747,12 @@ static const mrb_mt_entry metaprog_krn_rom_entries[] = {
 
 /* public counterparts on `Kernel` itself; see `kernel_module_function_entries`
    in src/kernel.c */
-static const mrb_mt_entry metaprog_krn_module_function_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry metaprog_krn_module_function_entries[] = {
   MRB_MT_ENTRY(mrb_f_global_variables, MRB_SYM(global_variables), MRB_ARGS_NONE()),  /* 15.3.1.2.4 */
   MRB_MT_ENTRY(mrb_local_variables, MRB_SYM(local_variables),  MRB_ARGS_NONE()),  /* 15.3.1.2.7 */
 };
 
-static const mrb_mt_entry metaprog_mod_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry metaprog_mod_rom_entries[] = {
   MRB_MT_ENTRY(mrb_mod_class_variables,          MRB_SYM(class_variables), MRB_ARGS_OPT(1)),  /* 15.2.2.4.19 */
   MRB_MT_ENTRY(mrb_mod_remove_cvar,              MRB_SYM(remove_class_variable), MRB_ARGS_REQ(1)),  /* 15.2.2.4.39 */
   MRB_MT_ENTRY(mrb_mod_cvar_defined,             MRB_SYM_Q(class_variable_defined), MRB_ARGS_REQ(1)),  /* 15.2.2.4.16 */
