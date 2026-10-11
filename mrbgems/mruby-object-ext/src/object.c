@@ -96,7 +96,7 @@ obj_instance_exec(mrb_state *mrb, mrb_value self)
   return mrb_object_exec(mrb, self, mrb_singleton_class_ptr(mrb, self));
 }
 
-static const mrb_mt_entry nil_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry nil_ext_rom_entries[] = {
   MRB_MT_ENTRY(nil_to_a, MRB_SYM(to_a), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(nil_to_h, MRB_SYM(to_h), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(nil_to_i, MRB_SYM(to_i), MRB_ARGS_NONE()),
@@ -105,7 +105,7 @@ static const mrb_mt_entry nil_ext_rom_entries[] = {
 #endif
 };
 
-static const mrb_mt_entry bob_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry bob_ext_rom_entries[] = {
   MRB_MT_ENTRY(obj_instance_exec, MRB_SYM(instance_exec), MRB_ARGS_ANY()|MRB_ARGS_BLOCK()),
 };
 

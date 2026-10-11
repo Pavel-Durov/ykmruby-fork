@@ -334,7 +334,7 @@ mrb_mod_cmp(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry mod_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry mod_ext_rom_entries[] = {
   MRB_MT_ENTRY(mrb_mod_lt,            MRB_OPSYM(lt), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(mrb_mod_le,            MRB_OPSYM(le), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(mrb_mod_cmp,           MRB_OPSYM(cmp), MRB_ARGS_REQ(1)),
@@ -346,7 +346,7 @@ static const mrb_mt_entry mod_ext_rom_entries[] = {
   MRB_MT_ENTRY(mod_singleton_class_p, MRB_SYM_Q(singleton_class), MRB_ARGS_NONE()),
 };
 
-static const mrb_mt_entry cls_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry cls_ext_rom_entries[] = {
   MRB_MT_ENTRY(class_attached_object, MRB_SYM(attached_object), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(class_subclasses,      MRB_SYM(subclasses),   MRB_ARGS_NONE()),
 };

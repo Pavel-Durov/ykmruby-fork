@@ -12,6 +12,11 @@
   #include "TargetConditionals.h"
   #endif
 #endif
+#ifdef USE_YK
+# define MRB_YK_STATIC
+#else
+# define MRB_YK_STATIC static
+#endif
 
 #ifdef __cplusplus
 #ifdef MRB_USE_CXX_ABI
