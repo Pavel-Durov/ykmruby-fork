@@ -17,7 +17,7 @@ MRB_PRESYM_DEFINE_VAR_AND_INITER(catch_syms, 3, MRB_SYM(Object), MRB_SYM(new), M
  * This creates a default tag (Object.new) if none provided, then calls
  * the block with the tag as argument.
  */
-static const mrb_code catch_iseq[] = {
+MRB_YK_STATIC const mrb_code catch_iseq[] = {
   OP_ENTER,    0x00, 0x20, 0x01,     // 000 ENTER         0:1:0:0:0:0:1 (0x2001)
   OP_JMP,      0x00, 0x06,           // 004 JMP           013
 
@@ -36,7 +36,7 @@ static const mrb_code catch_iseq[] = {
 };
 
 /* Instruction representation for catch method bytecode */
-static const mrb_irep catch_irep = {
+MRB_YK_STATIC const mrb_irep catch_irep = {
   3,5,0,
   MRB_IREP_STATIC,catch_iseq,
   NULL,catch_syms,NULL,
@@ -47,7 +47,7 @@ static const mrb_irep catch_irep = {
 
 /* Procedure object for catch method - used to identify catch blocks in call stack */
 mrb_alignas(8)
-static const struct RProc catch_proc = {
+MRB_YK_STATIC const struct RProc catch_proc = {
   NULL, MRB_TT_PROC, MRB_GC_RED, MRB_OBJ_IS_FROZEN, MRB_PROC_SCOPE | MRB_PROC_STRICT,
   { &catch_irep }, NULL, { NULL }
 };
