@@ -64,7 +64,7 @@ mrb_value mrb_flo_to_s(mrb_state *, mrb_value);
 #endif
 void mrb_method_added(mrb_state *mrb, struct RClass *c, mrb_sym mid);
 mrb_noreturn void mrb_method_missing(mrb_state *mrb, mrb_sym name, mrb_value self, mrb_value args);
-mrb_method_t mrb_vm_find_method(mrb_state *mrb, struct RClass *c, struct RClass **cp, mrb_sym mid);
+MRB_YK_OUTLINE mrb_method_t mrb_vm_find_method(mrb_state *mrb, struct RClass *c, struct RClass **cp, mrb_sym mid);
 #ifdef MRB_USE_REFINEMENTS
 /* refinement.c / class.c / proc.c */
 struct RArray *mrb_vm_refinements(mrb_state *mrb, const mrb_callinfo *ci);
@@ -883,6 +883,9 @@ void mrb_gc_free_iv(mrb_state*, struct RObject*);
 /* IV shape tree */
 void mrb_init_shape(mrb_state*);
 void mrb_free_shape(mrb_state*);
+#ifdef USE_YK
+extern uint32_t mrb_yk_shape_epoch;
+#endif
 
 /*
  * Object Shape (Hidden Class) structures.
@@ -984,14 +987,14 @@ mrb_value mrb_f_public_send(mrb_state *mrb, mrb_value self);
 mrb_value mrb_args_pack_positional(mrb_state *mrb);
 
 #ifdef MRB_USE_BIGINT
-mrb_value mrb_bint_new_int(mrb_state *mrb, mrb_int x);
+MRB_YK_OUTLINE mrb_value mrb_bint_new_int(mrb_state *mrb, mrb_int x);
 #ifdef MRB_INT64
 #define mrb_bint_new_int64(mrb,x) mrb_bint_new_int((mrb),(mrb_int)(x))
 #else
 mrb_value mrb_bint_new_int64(mrb_state *mrb, int64_t x);
 #endif
 mrb_value mrb_bint_new_uint64(mrb_state *mrb, uint64_t x);
-mrb_value mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base);
+MRB_YK_OUTLINE mrb_value mrb_bint_new_str(mrb_state *mrb, const char *x, mrb_int len, mrb_int base);
 mrb_value mrb_as_bint(mrb_state *mrb, mrb_value x);
 mrb_value mrb_bint_add(mrb_state *mrb, mrb_value x, mrb_value y);
 mrb_value mrb_bint_sub(mrb_state *mrb, mrb_value x, mrb_value y);
@@ -1000,9 +1003,9 @@ mrb_value mrb_bint_sub_n(mrb_state *mrb, mrb_value x, mrb_value y);
 mrb_value mrb_bint_mul(mrb_state *mrb, mrb_value x, mrb_value y);
 mrb_value mrb_bint_div(mrb_state *mrb, mrb_value x, mrb_value y);
 mrb_value mrb_bint_divmod(mrb_state *mrb, mrb_value x, mrb_value y);
-mrb_value mrb_bint_add_ii(mrb_state *mrb, mrb_int x, mrb_int y);
-mrb_value mrb_bint_sub_ii(mrb_state *mrb, mrb_int x, mrb_int y);
-mrb_value mrb_bint_mul_ii(mrb_state *mrb, mrb_int x, mrb_int y);
+MRB_YK_OUTLINE mrb_value mrb_bint_add_ii(mrb_state *mrb, mrb_int x, mrb_int y);
+MRB_YK_OUTLINE mrb_value mrb_bint_sub_ii(mrb_state *mrb, mrb_int x, mrb_int y);
+MRB_YK_OUTLINE mrb_value mrb_bint_mul_ii(mrb_state *mrb, mrb_int x, mrb_int y);
 mrb_value mrb_bint_mod(mrb_state *mrb, mrb_value x, mrb_value y);
 mrb_value mrb_bint_rem(mrb_state *mrb, mrb_value x, mrb_value y);
 mrb_value mrb_bint_pow(mrb_state *mrb, mrb_value x, mrb_value y);

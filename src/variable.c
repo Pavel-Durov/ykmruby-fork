@@ -496,12 +496,19 @@ mrb_init_shape(mrb_state *mrb)
   mrb->root_shape = shape_root(mrb);
 }
 
+#ifdef USE_YK
+uint32_t mrb_yk_shape_epoch;
+#endif
+
 void
 mrb_free_shape(mrb_state *mrb)
 {
   if (mrb->root_shape) {
     shape_free_tree(mrb, mrb->root_shape);
     mrb->root_shape = NULL;
+#ifdef USE_YK
+    mrb_yk_shape_epoch++;
+#endif
   }
 }
 
@@ -1687,7 +1694,7 @@ gv_virtual_free(mrb_state *mrb, void *p)
   mrb_free(mrb, p);
 }
 
-static const mrb_data_type gv_virtual_type = { "gv_virtual", gv_virtual_free };
+MRB_YK_STATIC const mrb_data_type gv_virtual_type = { "gv_virtual", gv_virtual_free };
 
 static const struct gv_virtual*
 gv_virtual_check(mrb_value v)

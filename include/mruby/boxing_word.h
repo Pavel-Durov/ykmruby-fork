@@ -171,7 +171,7 @@ mrb_val_union(mrb_value v)
 
 MRB_API mrb_value mrb_word_boxing_cptr_value(mrb_state*, void*);
 #ifndef MRB_NO_FLOAT
-MRB_API mrb_value mrb_word_boxing_float_value(mrb_state*, mrb_float);
+MRB_API MRB_YK_OUTLINE mrb_value mrb_word_boxing_float_value(mrb_state*, mrb_float);
 #endif
 MRB_API mrb_value mrb_boxing_int_value(mrb_state*, mrb_int);
 

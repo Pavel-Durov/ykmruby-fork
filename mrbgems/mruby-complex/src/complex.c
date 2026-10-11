@@ -1045,7 +1045,7 @@ complex_pow(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry complex_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry complex_rom_entries[] = {
   MRB_MT_ENTRY(complex_real,      MRB_SYM(real),   MRB_ARGS_NONE()),
   MRB_MT_ENTRY(complex_imaginary, MRB_SYM(imaginary), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_complex_to_f,  MRB_SYM(to_f),   MRB_ARGS_NONE()),

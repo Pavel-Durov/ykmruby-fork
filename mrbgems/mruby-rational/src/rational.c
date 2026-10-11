@@ -1470,7 +1470,7 @@ rational_cmp(mrb_state *mrb, mrb_value x)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry rational_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry rational_rom_entries[] = {
   MRB_MT_ENTRY(rational_numerator,   MRB_SYM(numerator), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(rational_denominator, MRB_SYM(denominator), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(mrb_rational_to_i,    MRB_SYM(to_i),     MRB_ARGS_NONE()),

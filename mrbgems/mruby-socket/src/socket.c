@@ -1316,12 +1316,12 @@ mrb_basicsocket_send_syswrite(mrb_state *mrb, mrb_value self)
 #endif /* MRB_HAL_SOCKET_HAS_FD_IO */
 
 /* ---------------------------*/
-static const mrb_mt_entry addrinfo_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry addrinfo_rom_entries[] = {
   MRB_MT_ENTRY(mrb_addrinfo_getnameinfo, MRB_SYM(getnameinfo), MRB_ARGS_OPT(1)),
   MRB_MT_ENTRY(mrb_addrinfo_unix_path,   MRB_SYM(unix_path), MRB_ARGS_NONE()),
 };
 
-static const mrb_mt_entry basicsocket_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry basicsocket_rom_entries[] = {
   MRB_MT_ENTRY(mrb_basicsocket_recvfrom,      MRB_SYM(_recvfrom), MRB_ARGS_REQ(1)|MRB_ARGS_OPT(1)),
   MRB_MT_ENTRY(mrb_basicsocket_setnonblock,   MRB_SYM(_setnonblock), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(mrb_basicsocket_getpeereid,    MRB_SYM(getpeereid), MRB_ARGS_NONE()),
@@ -1351,11 +1351,11 @@ static const mrb_mt_entry basicsocket_rom_entries[] = {
 #endif
 };
 
-static const mrb_mt_entry ipsocket_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry ipsocket_rom_entries[] = {
   MRB_MT_ENTRY(mrb_ipsocket_recvfrom, MRB_SYM(recvfrom), MRB_ARGS_REQ(1)|MRB_ARGS_OPT(1)),
 };
 
-static const mrb_mt_entry socket_option_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry socket_option_rom_entries[] = {
   MRB_MT_ENTRY(socket_option_init,    MRB_SYM(initialize), MRB_ARGS_REQ(4)),
   MRB_MT_ENTRY(socket_option_inspect, MRB_SYM(inspect), MRB_ARGS_REQ(0)),
   MRB_MT_ENTRY(socket_option_family,  MRB_SYM(family),  MRB_ARGS_REQ(0)),
