@@ -1871,7 +1871,7 @@ ary_include(mrb_state *mrb, mrb_value self)
   return mrb_false_value();
 }
 
-static const mrb_mt_entry array_ext_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry array_ext_rom_entries[] = {
   MRB_MT_ENTRY(ary_assoc,              MRB_SYM(assoc),              MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(ary_at,                 MRB_SYM(at),                 MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(ary_rassoc,             MRB_SYM(rassoc),             MRB_ARGS_REQ(1)),

@@ -815,7 +815,7 @@ method_name(mrb_state *mrb, mrb_value self)
 }
 
 /* ---------------------------*/
-static const mrb_mt_entry method_ubm_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry method_ubm_rom_entries[] = {
   MRB_MT_ENTRY(unbound_method_bind,  MRB_SYM(bind), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(method_super_method,  MRB_SYM(super_method), MRB_ARGS_NONE()),
   MRB_MT_ENTRY(method_eql,           MRB_OPSYM(eq), MRB_ARGS_REQ(1)),
@@ -830,7 +830,7 @@ static const mrb_mt_entry method_ubm_rom_entries[] = {
   MRB_MT_ENTRY(method_name,          MRB_SYM(name),         MRB_ARGS_NONE()),
 };
 
-static const mrb_mt_entry method_mtd_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry method_mtd_rom_entries[] = {
   MRB_MT_ENTRY(method_eql,            MRB_OPSYM(eq), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(method_eql,            MRB_SYM_Q(eql), MRB_ARGS_REQ(1)),
   MRB_MT_ENTRY(method_to_s,           MRB_SYM(to_s),         MRB_ARGS_NONE()),

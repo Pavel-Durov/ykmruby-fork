@@ -606,7 +606,7 @@ random_f_bytes(mrb_state *mrb, mrb_value self)
 }
 
 
-static const mrb_mt_entry random_rom_entries[] = {
+MRB_YK_STATIC const mrb_mt_entry random_rom_entries[] = {
   MRB_MT_ENTRY(random_m_init,  MRB_SYM(initialize), MRB_ARGS_OPT(1)),
   MRB_MT_ENTRY(random_m_rand,  MRB_SYM(rand), MRB_ARGS_OPT(1)),
   MRB_MT_ENTRY(random_m_srand, MRB_SYM(srand), MRB_ARGS_OPT(1)),
