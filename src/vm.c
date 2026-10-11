@@ -2527,7 +2527,7 @@ uint32_t yk_load_w(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]<<
     yk_gen = mrb_yk_iseq_gen; \
     if (!irep->yk_locs) ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep); \
   } \
-  mrb_jit_yk_hook(mrb, irep, yk_pc); \
+  yk_mt_control_point(yk_mt, &((YkLocation*)irep->yk_locs)[(size_t)(yk_pc - irep->iseq)]); \
   if (yk_is_interpreting()) { \
     insn_pc = yk_pc; \
     insn = BYTECODE_DECODER(*insn_pc); \
