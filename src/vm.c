@@ -2500,18 +2500,18 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 
 #define NOOP(x) __asm__ volatile("" : : "r"(x))
 __attribute__((yk_idempotent, noinline))
-mrb_code yk_load_insn(const mrb_code *pc, uint32_t gen) {
+mrb_code yk_load_insn(const mrb_code *pc, uint64_t gen) {
   NOOP(gen);
   __asm__ volatile("" : "+r,m"(pc) : : "memory");
   return *pc;
 }
 
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_b(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]; }
+uint32_t yk_load_b(const mrb_code *pc, uint64_t gen) { NOOP(gen); return pc[0]; }
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_s(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]<<8|pc[1]; }
+uint32_t yk_load_s(const mrb_code *pc, uint64_t gen) { NOOP(gen); return pc[0]<<8|pc[1]; }
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_w(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]<<16|pc[1]<<8|pc[2]; }
+uint32_t yk_load_w(const mrb_code *pc, uint64_t gen) { NOOP(gen); return pc[0]<<16|pc[1]<<8|pc[2]; }
 
 #undef READ_B
 #undef READ_S
@@ -3377,7 +3377,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
 #ifdef USE_YK
   const mrb_code *insn_pc;
   const mrb_code *yk_pc = NULL;
-  uint32_t yk_gen = 0;
+  uint64_t yk_gen = 0;
 #endif
   int ai = mrb_gc_arena_save(mrb);
   struct mrb_jmpbuf *prev_jmp = mrb->jmp;

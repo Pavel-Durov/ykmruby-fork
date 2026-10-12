@@ -78,7 +78,7 @@ MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size3[] = {
 #undef W
 
 YkMT *yk_mt = NULL;
-uint32_t mrb_yk_iseq_gen = 0;
+uint64_t mrb_yk_iseq_gen = 0;
 YkLocation yk_null_loc;
 
 void yk_init(void)
