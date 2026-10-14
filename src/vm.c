@@ -2499,18 +2499,13 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 #ifdef USE_YK
 
 #define NOOPT_VAL(x) __asm__ volatile("" : "+r,m"(x) : : "memory")
+/* Same decoding as PEEK_*; `gen` keys the load so a reused iseq address misses. */
 __attribute__((yk_idempotent, noinline))
-mrb_code yk_load_insn(const mrb_code *pc, uint64_t gen) {
-  NOOPT_VAL(gen);
-  return *pc;
-}
-
+uint32_t yk_load_b(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PEEK_B(pc); }
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_b(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return pc[0]; }
+uint32_t yk_load_s(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PEEK_S(pc); }
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_s(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return pc[0]<<8|pc[1]; }
-__attribute__((yk_idempotent, noinline))
-uint32_t yk_load_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return pc[0]<<16|pc[1]<<8|pc[2]; }
+uint32_t yk_load_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PEEK_W(pc); }
 
 #undef READ_B
 #undef READ_S
@@ -2533,7 +2528,7 @@ uint32_t yk_load_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return pc
   } else { \
     insn_pc = (const mrb_code*)yk_promote((void*)yk_pc); \
     yk_gen = yk_promote(yk_gen); \
-    insn = BYTECODE_DECODER(yk_load_insn(insn_pc, yk_gen)); \
+    insn = BYTECODE_DECODER(yk_load_b(insn_pc, yk_gen)); \
   } \
   CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
 } while (0)
