@@ -6,76 +6,7 @@
 #include <mruby/opcode.h>
 #include <mruby/yk.h>
 
-/* ==== instruction sizes, to walk an iseq without a full opcode decode ===
- * Built from the canonical opcode list (mruby/ops.h) instead of copied by
- * hand, so it can never drift from the FETCH_/READ_ decode tables in
- * mruby/opcode.h that vm.c itself uses to decode the same bytecode. */
-#define Z 1
-#define S 3
-#define W 4
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size[] = {
-#define B 2
-#define BB 3
-#define BBB 4
-#define BS 4
-#define BSS 6
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size1[] = {
-#define B 3
-#define BB 4
-#define BBB 5
-#define BS 5
-#define BSS 7
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size2[] = {
-#define B 2
-#define BB 4
-#define BBB 5
-#define BS 4
-#define BSS 6
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size3[] = {
-#define B 3
-#define BB 5
-#define BBB 6
-#define BS 5
-#define BSS 7
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-#undef Z
-#undef S
-#undef W
+#include "yk_insn_size.h"
 
 YkMT *yk_mt = NULL;
 uint64_t mrb_yk_iseq_gen = 0;
@@ -120,9 +51,9 @@ yk_init_loc(mrb_state *mrb, const mrb_irep *irep)
     size_t idx;
 
     switch (op) {
-    case OP_EXT1: pc += mrb_jit_yk_insn_size1[pc[1]] + 1; continue;
-    case OP_EXT2: pc += mrb_jit_yk_insn_size2[pc[1]] + 1; continue;
-    case OP_EXT3: pc += mrb_jit_yk_insn_size3[pc[1]] + 1; continue;
+    case OP_EXT1: pc += mrc_insn_size1[pc[1]] + 1; continue;
+    case OP_EXT2: pc += mrc_insn_size2[pc[1]] + 1; continue;
+    case OP_EXT3: pc += mrc_insn_size3[pc[1]] + 1; continue;
     case OP_JMP:
     case OP_JMPUW:
       off = (int16_t)PEEK_S(pc + 1);
@@ -137,7 +68,7 @@ yk_init_loc(mrb_state *mrb, const mrb_irep *irep)
       break;
 
     default:
-      pc += mrb_jit_yk_insn_size[op];
+      pc += mrc_insn_size[op];
       continue;
     }
 
