@@ -17,7 +17,7 @@ MRuby::Build.new('yk_wordboxing') do |conf|
   conf.archiver.command = `#{yk_config} #{yk_profile} --ar`.strip
   conf.cc.defines << 'USE_YK'
   conf.cc.defines << 'MRB_NO_DIRECT_THREADING'
-  # Without MRB_WORD_BOXING, mrb_value is a 2-word {union; enum tt} 
+  # Without MRB_WORD_BOXING, mrb_value is a 2-word {union; enum tt}
   # hitting yk's "Multi-locations not yet supported" error.
   conf.cc.defines << 'MRB_WORD_BOXING'
   conf.cc.defines << 'MRB_INT64'
