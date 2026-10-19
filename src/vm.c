@@ -1191,6 +1191,12 @@ cipop(mrb_state *mrb)
   struct mrb_context *c = mrb->c;
   mrb_callinfo *ci = c->ci;
 
+#ifdef USE_YK
+  if (ci->proc && !MRB_PROC_CFUNC_P(ci->proc)) {
+    ((mrb_irep*)ci->proc->body.irep)->called = FALSE;
+  }
+#endif
+
   /* Fast path: no env and no blk (most common for simple method calls) */
   if (mrb_likely((!ci->u.env || ci->u.env->tt != MRB_TT_ENV) && !ci->blk)) {
     c->ci--;
@@ -2521,7 +2527,7 @@ uint32_t yk_peek_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PE
     yk_gen = mrb_yk_iseq_gen; \
     if (!irep->yk_locs) ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep); \
   } \
-  yk_mt_control_point(yk_mt, &((YkLocation*)irep->yk_locs)[(size_t)(yk_pc - irep->iseq)]); \
+  mrb_jit_yk_hook(mrb, irep, yk_pc); \
   if (yk_is_interpreting()) { \
     insn_pc = yk_pc; \
     insn = BYTECODE_DECODER(*insn_pc); \
