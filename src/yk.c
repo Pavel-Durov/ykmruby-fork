@@ -3,82 +3,12 @@
 #ifdef USE_YK
 #include <stdlib.h>
 #include <mruby/irep.h>
+#include <mruby/internal.h>
 #include <mruby/opcode.h>
 #include <mruby/yk.h>
 
-/* ==== instruction sizes, to walk an iseq without a full opcode decode ===
- * Built from the canonical opcode list (mruby/ops.h) instead of copied by
- * hand, so it can never drift from the FETCH_/READ_ decode tables in
- * mruby/opcode.h that vm.c itself uses to decode the same bytecode. */
-#define Z 1
-#define S 3
-#define W 4
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size[] = {
-#define B 2
-#define BB 3
-#define BBB 4
-#define BS 4
-#define BSS 6
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size1[] = {
-#define B 3
-#define BB 4
-#define BBB 5
-#define BS 5
-#define BSS 7
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size2[] = {
-#define B 2
-#define BB 4
-#define BBB 5
-#define BS 4
-#define BSS 6
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-MRB_YK_STATIC const uint8_t mrb_jit_yk_insn_size3[] = {
-#define B 3
-#define BB 5
-#define BBB 6
-#define BS 5
-#define BSS 7
-#define OPCODE(_,x) x,
-#include <mruby/ops.h>
-#undef OPCODE
-#undef B
-#undef BB
-#undef BBB
-#undef BS
-#undef BSS
-};
-#undef Z
-#undef S
-#undef W
-
 YkMT *yk_mt = NULL;
-uint32_t mrb_yk_iseq_gen = 0;
+uint64_t mrb_yk_iseq_gen = 0;
 YkLocation yk_null_loc;
 
 void yk_init(void)
@@ -113,42 +43,23 @@ yk_init_loc(mrb_state *mrb, const mrb_irep *irep)
   pc = irep->iseq;
   end = irep->iseq + irep->ilen;
   while (pc < end) {
-    uint8_t op = pc[0];
-    const mrb_code *next;
-    const mrb_code *target;
+    struct mrb_insn_data d = mrb_decode_insn(pc);
+
+    pc = d.next;
     int16_t off;
-    size_t idx;
-
-    switch (op) {
-    case OP_EXT1: pc += mrb_jit_yk_insn_size1[pc[1]] + 1; continue;
-    case OP_EXT2: pc += mrb_jit_yk_insn_size2[pc[1]] + 1; continue;
-    case OP_EXT3: pc += mrb_jit_yk_insn_size3[pc[1]] + 1; continue;
+    switch (d.insn) {
     case OP_JMP:
-    case OP_JMPUW:
-      off = (int16_t)PEEK_S(pc + 1);
-      next = pc + 3;
-      break;
-
+    case OP_JMPUW: off = (int16_t)d.a; break;
     case OP_JMPIF:
     case OP_JMPNOT:
-    case OP_JMPNIL:
-      off = (int16_t)PEEK_S(pc + 2);
-      next = pc + 4;
-      break;
-
-    default:
-      pc += mrb_jit_yk_insn_size[op];
-      continue;
+    case OP_JMPNIL: off = (int16_t)d.b; break;
+    default: continue;
     }
 
-    target = next + off;
-    if (target < next && target >= irep->iseq) {
-      idx = (size_t)(target - irep->iseq);
-      if (yk_location_is_null(locs[idx])) {
-        locs[idx] = yk_location_new();
-      }
+    const mrb_code *target = pc + off;
+    if (off < 0 && target >= irep->iseq && yk_location_is_null(locs[target - irep->iseq])) {
+      locs[target - irep->iseq] = yk_location_new();
     }
-    pc = next;
   }
   return locs;
 }

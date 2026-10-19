@@ -2504,27 +2504,21 @@ prepare_tagged_break(mrb_state *mrb, uint32_t tag, const mrb_callinfo *return_ci
 
 #ifdef USE_YK
 
-#define NOOP(x) __asm__ volatile("" : : "r"(x))
+#define NOOPT_VAL(x) __asm__ volatile("" : "+r,m"(x) : : "memory")
+/* Same decoding as PEEK_*; `gen` keys the load so a reused iseq address misses. */
 __attribute__((yk_idempotent, noinline))
-mrb_code yk_load_insn(const mrb_code *pc, uint32_t gen) {
-  NOOP(gen);
-  __asm__ volatile("" : "+r,m"(pc) : : "memory");
-  return *pc;
-}
-
+uint32_t yk_peek_b(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PEEK_B(pc); }
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_b(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]; }
+uint32_t yk_peek_s(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PEEK_S(pc); }
 __attribute__((yk_idempotent, noinline))
-uint32_t yk_load_s(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]<<8|pc[1]; }
-__attribute__((yk_idempotent, noinline))
-uint32_t yk_load_w(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]<<16|pc[1]<<8|pc[2]; }
+uint32_t yk_peek_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PEEK_W(pc); }
 
 #undef READ_B
 #undef READ_S
 #undef READ_W
-#define READ_B() (yk_is_interpreting() ? PEEK_B(pc++) : yk_load_b(pc++, yk_gen))
-#define READ_S() (pc+=2, yk_is_interpreting() ? PEEK_S(pc-2) : yk_load_s(pc-2, yk_gen))
-#define READ_W() (pc+=3, yk_is_interpreting() ? PEEK_W(pc-3) : yk_load_w(pc-3, yk_gen))
+#define READ_B() (yk_is_interpreting() ? PEEK_B(pc++) : yk_peek_b(pc++, yk_gen))
+#define READ_S() (pc+=2, yk_is_interpreting() ? PEEK_S(pc-2) : yk_peek_s(pc-2, yk_gen))
+#define READ_W() (pc+=3, yk_is_interpreting() ? PEEK_W(pc-3) : yk_peek_w(pc-3, yk_gen))
 
 #define CALL_CODE_HOOKS() do { \
   if (!yk_pc) { \
@@ -2540,7 +2534,7 @@ uint32_t yk_load_w(const mrb_code *pc, uint32_t gen) { NOOP(gen); return pc[0]<<
   } else { \
     insn_pc = (const mrb_code*)yk_promote((void*)yk_pc); \
     yk_gen = yk_promote(yk_gen); \
-    insn = BYTECODE_DECODER(yk_load_insn(insn_pc, yk_gen)); \
+    insn = BYTECODE_DECODER(yk_peek_b(insn_pc, yk_gen)); \
   } \
   CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
 } while (0)
@@ -3383,7 +3377,7 @@ mrb_vm_exec(mrb_state *mrb, const struct RProc *begin_proc, const mrb_code *iseq
 #ifdef USE_YK
   const mrb_code *insn_pc;
   const mrb_code *yk_pc = NULL;
-  uint32_t yk_gen = 0;
+  uint64_t yk_gen = 0;
 #endif
   int ai = mrb_gc_arena_save(mrb);
   struct mrb_jmpbuf *prev_jmp = mrb->jmp;

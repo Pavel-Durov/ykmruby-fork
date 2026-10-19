@@ -20,7 +20,7 @@ extern YkLocation yk_null_loc;
 
 /* mrb_yk_iseq_gen increased whenever an iseq is freed.
   Its used as idempotent key for bytecode fetching in the dispatch loop.*/
-extern uint32_t mrb_yk_iseq_gen;
+extern uint64_t mrb_yk_iseq_gen;
 
 static inline void
 mrb_jit_yk_hook(mrb_state *mrb, const mrb_irep *irep, const mrb_code *pc)
