@@ -2527,7 +2527,23 @@ uint32_t yk_peek_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PE
     yk_gen = mrb_yk_iseq_gen; \
     if (!irep->yk_locs) ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep); \
   } \
-  mrb_jit_yk_hook(mrb, irep, yk_pc); \
+  { \
+    YkLocation *yk_loc = &((YkLocation*)irep->yk_locs)[(size_t)(yk_pc - irep->iseq)]; \
+    /* As in yklua: a function entered again while it already has an active \
+       frame is recursing, so its entry gets a location and each recursive call \
+       becomes a trace boundary instead of unrolling into the caller's trace. \
+       The `yk_is_interpreting()` check comes first so a trace never evaluates \
+       `pc == irep->iseq`. */ \
+    if (yk_is_interpreting() && yk_pc == irep->iseq) { \
+      if (irep->called && yk_location_is_null(*yk_loc)) { \
+        *yk_loc = yk_location_new(); \
+      } \
+      else if (!irep->called) { \
+        ((mrb_irep*)irep)->called = TRUE; \
+      } \
+    } \
+    yk_mt_control_point(yk_mt, yk_loc); \
+  } \
   if (yk_is_interpreting()) { \
     insn_pc = yk_pc; \
     insn = BYTECODE_DECODER(*insn_pc); \
