@@ -1185,6 +1185,23 @@ mrb_env_detach_all(mrb_state *mrb, struct mrb_context *c, mrb_bool resolve)
   }
 }
 
+#ifdef USE_YK
+#define YK_MARK_CALLED(irep) do { \
+  if (yk_is_interpreting()) { \
+    if (!(irep)->called) { \
+      ((mrb_irep*)(irep))->called = TRUE; \
+    } \
+    else { \
+      if (!(irep)->yk_locs) ((mrb_irep*)(irep))->yk_locs = yk_init_loc(mrb, (irep)); \
+      if (yk_location_is_null(((YkLocation*)(irep)->yk_locs)[0])) \
+        ((YkLocation*)(irep)->yk_locs)[0] = yk_location_new(); \
+    } \
+  } \
+} while (0)
+#else
+#define YK_MARK_CALLED(irep) do { } while (0)
+#endif
+
 static inline mrb_callinfo*
 cipop(mrb_state *mrb)
 {
@@ -2527,23 +2544,8 @@ uint32_t yk_peek_w(const mrb_code *pc, uint64_t gen) { NOOPT_VAL(gen); return PE
     yk_gen = mrb_yk_iseq_gen; \
     if (!irep->yk_locs) ((mrb_irep*)irep)->yk_locs = yk_init_loc(mrb, irep); \
   } \
-  { \
-    YkLocation *yk_loc = &((YkLocation*)irep->yk_locs)[(size_t)(yk_pc - irep->iseq)]; \
-    /* As in yklua: a function entered again while it already has an active \
-       frame is recursing, so its entry gets a location and each recursive call \
-       becomes a trace boundary instead of unrolling into the caller's trace. \
-       The `yk_is_interpreting()` check comes first so a trace never evaluates \
-       `pc == irep->iseq`. */ \
-    if (yk_is_interpreting() && yk_pc == irep->iseq) { \
-      if (irep->called && yk_location_is_null(*yk_loc)) { \
-        *yk_loc = yk_location_new(); \
-      } \
-      else if (!irep->called) { \
-        ((mrb_irep*)irep)->called = TRUE; \
-      } \
-    } \
-    yk_mt_control_point(yk_mt, yk_loc); \
-  } \
+  YkLocation *yk_loc = &((YkLocation*)irep->yk_locs)[(size_t)(yk_pc - irep->iseq)]; \
+  yk_mt_control_point(yk_mt, yk_loc); \
   if (yk_is_interpreting()) { \
     insn_pc = yk_pc; \
     insn = BYTECODE_DECODER(*insn_pc); \
@@ -3311,6 +3313,7 @@ vm_call_proc(mrb_state *mrb, const struct RProc *p, mrb_int nargs,
     if (MRB_PROC_ENV_P(p)) {
       ci->stack[0] = MRB_PROC_ENV(p)->stack[0];
     }
+    YK_MARK_CALLED(irep);
     ci->pc = irep->iseq;
     *irepp = irep;
   }
@@ -4090,6 +4093,7 @@ RETRY_TRY_BLOCK:
           /* setup environment for calling method */
           irep = p->body.irep;
           stack_extend(mrb, (irep->nregs < 4) ? 4 : irep->nregs);
+          YK_MARK_CALLED(irep);
           ci->pc = irep->iseq;
           JUMP;
         }
@@ -5066,6 +5070,7 @@ RETRY_TRY_BLOCK:
       irep = p->body.irep;
       stack_extend(mrb, irep->nregs);
       stack_clear(regs+1, irep->nregs-1);
+      YK_MARK_CALLED(irep);
       ci->pc = irep->iseq;
       JUMP;
     }
