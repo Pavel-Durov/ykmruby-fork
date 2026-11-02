@@ -2215,7 +2215,7 @@ MRB_YK_STATIC const mrb_code prepare_exec_strcat_iseq[] = {
   OP_CALL,              // OP_CALL      R0            ; tailcall to prepare_exec_strcat_post_func()
   OP_RETURN,  0         // OP_RETURN    R0            ; unreachable
 };
-MRB_YK_STATIC const mrb_irep prepare_exec_strcat_irep = MRB_MAKE_STATIC_IREP(4, 5, prepare_exec_strcat_iseq, prepare_exec_strcat_syms);
+MRB_YK_STATIC MRB_YK_IREP_CONST mrb_irep prepare_exec_strcat_irep = MRB_MAKE_STATIC_IREP(4, 5, prepare_exec_strcat_iseq, prepare_exec_strcat_syms);
 /* Both become an mrb_value, whose word-boxed form keeps the type tag in the
    low bits of the pointer; the alignment a static object is given otherwise
    is the compiler's to choose (see the static procs in proc.c and class.c,

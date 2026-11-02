@@ -36,7 +36,7 @@ MRB_YK_STATIC const mrb_code catch_iseq[] = {
 };
 
 /* Instruction representation for catch method bytecode */
-MRB_YK_STATIC const mrb_irep catch_irep = {
+MRB_YK_STATIC MRB_YK_IREP_CONST mrb_irep catch_irep = {
   3,5,0,
   MRB_IREP_STATIC,catch_iseq,
   NULL,catch_syms,NULL,

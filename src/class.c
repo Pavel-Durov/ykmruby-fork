@@ -5147,7 +5147,7 @@ MRB_YK_STATIC const mrb_code new_iseq[] = {
 
 MRB_PRESYM_DEFINE_VAR_AND_INITER(new_syms, 2, MRB_SYM(allocate), MRB_SYM(initialize))
 
-MRB_YK_STATIC const mrb_irep new_irep = {
+MRB_YK_STATIC MRB_YK_IREP_CONST mrb_irep new_irep = {
   4, 6, 0, MRB_IREP_STATIC,
   new_iseq, NULL, new_syms, NULL, NULL, NULL,
   sizeof(new_iseq), 0, 2, 0, 0,
@@ -5179,7 +5179,7 @@ MRB_YK_STATIC const mrb_code neq_iseq[] = {
   OP_RETURN, 0               // 017 OP_RETURN    R0
 };
 
-MRB_YK_STATIC const mrb_irep neq_irep = {
+MRB_YK_STATIC MRB_YK_IREP_CONST mrb_irep neq_irep = {
   4, 6, 0, MRB_IREP_STATIC,
   neq_iseq, NULL, NULL, NULL, NULL, NULL,
   sizeof(neq_iseq), 0, 2, 0, 0,
