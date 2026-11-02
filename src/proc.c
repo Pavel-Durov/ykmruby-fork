@@ -17,7 +17,7 @@ MRB_YK_STATIC const mrb_code call_iseq[] = {
   OP_CALL,
 };
 
-MRB_YK_STATIC const mrb_irep call_irep = {
+MRB_YK_STATIC MRB_YK_IREP_CONST mrb_irep call_irep = {
   0,                                   /* nlocals */
   2,                                   /* nregs */
   0,                                   /* clen */

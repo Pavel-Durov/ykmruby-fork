@@ -14,8 +14,14 @@
 #endif
 #ifdef USE_YK
 # define MRB_YK_STATIC
+/* Ireps built into the interpreter (e.g. mrblib) are generated as C `const`,
+   which the linker places in read-only .rodata. yk sets irep locations at
+   runtime, which would segfault when writing to read-only memory. So under
+   yk these ireps are set as non-const. */
+# define MRB_YK_IREP_CONST
 #else
 # define MRB_YK_STATIC static
+# define MRB_YK_IREP_CONST const
 #endif
 #ifdef USE_YK
 # define MRB_YK_OUTLINE __attribute__((noinline, yk_outline))

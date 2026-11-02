@@ -510,7 +510,7 @@ cdump_irep_struct(mrc_ccontext *c, const mrc_irep *irep, uint8_t flags, FILE *fp
 
 
   /* dump irep */
-  fprintf(fp, "MRB_YK_STATIC const mrb_irep %s_irep_%d = {\n", name, n);
+  fprintf(fp, "MRB_YK_STATIC MRB_YK_IREP_CONST mrb_irep %s_irep_%d = {\n", name, n);
   fprintf(fp,   "  %d,%d,%d,\n", irep->nlocals, irep->nregs, irep->clen);
   fprintf(fp,   "  MRB_IREP_STATIC,%s_iseq_%d,\n", name, n);
   if (0 < irep->plen) {
