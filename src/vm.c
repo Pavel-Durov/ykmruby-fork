@@ -4021,10 +4021,7 @@ RETRY_TRY_BLOCK:
       else
 #endif
 #ifdef USE_YK
-      if (yk_is_interpreting()) {
-        m = mrb_vm_find_method(mrb, ci->u.target_class, &ci->u.target_class, mid);
-      }
-      else {
+      {
         mrb_state *kmrb = (mrb_state*)yk_promote((void*)mrb);
         struct RClass *kc = (struct RClass*)yk_promote((void*)ci->u.target_class);
         mrb_sym kmid = yk_promote(mid);
