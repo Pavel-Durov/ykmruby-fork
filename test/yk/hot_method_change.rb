@@ -2,31 +2,35 @@
 # this test checks that idempotent method lookup works when we define or remove a method dynamically.
 #
 # Run with: YKD_SERIALISE_COMPILATION=1 build/yk_build_config/bin/mruby <this file>
-$iters = 2000
+$outer_iters = 100
+$inner_iters = 10000
 
-# Defining a method
-klass = Class.new { def m; 1; end }
+klass = Class.new { def one; 1; end; def two; 2; end }
 obj = klass.new
-sum = 0
-i = 0
-while i < $iters
-  klass.class_eval { def m; 2; end } if i == $iters / 2
-  sum += obj.m
-  i += 1
-end
-raise "define: #{sum}" unless sum == $iters / 2 + ($iters - $iters / 2) * 2
 
-# Removing a method
-parent = Class.new { def m; 2; end }
-child = Class.new(parent) { def m; 1; end }
-obj = child.new
-sum = 0
 i = 0
-while i < $iters
-  child.remove_method(:m) if i == $iters / 2
-  sum += obj.m
+while i < $outer_iters
+  klass.alias_method(:m, :one)
+
+  expected = 1
+  j = 0
+  while j < $inner_iters
+    if j == $inner_iters / 2
+      klass.alias_method(:m, :two)
+      expected = 2
+    end
+    raise "iteration #{i}, #{j}" unless obj.m == expected
+    j += 1
+  end
+
+  klass.remove_method(:m)
+  begin
+    obj.m
+    raise "remove: iteration #{i}"
+  rescue NoMethodError
+  end
+
   i += 1
 end
-raise "remove: #{sum}" unless sum == $iters / 2 + ($iters - $iters / 2) * 2
 
 puts 'OK'
