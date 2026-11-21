@@ -25,7 +25,11 @@ extern uint64_t mrb_yk_iseq_gen;
 extern uint64_t mrb_yk_method_version;
 #define MRB_YK_METHOD_VERSION_INC() (mrb_yk_method_version++)
 
+extern uint64_t mrb_yk_shape_version;
+#define MRB_YK_SHAPE_VERSION_INC() (mrb_yk_shape_version++)
+
 #else
 #define MRB_YK_METHOD_VERSION_INC()
+#define MRB_YK_SHAPE_VERSION_INC()
 #endif /* USE_YK */
 #endif /* MRUBY_YK_H */

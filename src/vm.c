@@ -2542,6 +2542,20 @@ __attribute__((yk_idempotent, noinline))
 struct RClass *yk_find_target_class(mrb_state *mrb, struct RClass *c, mrb_sym mid, uint64_t version)
 { NOOPT_VAL(version); mrb_vm_find_method(mrb, c, &c, mid); return c; }
 
+/* This idempotent is safe since shapes are never modified after creation.
+   It's also keyed on `mrb_yk_shape_version`, which is increased whenever shapes are freed. */
+__attribute__((yk_idempotent, noinline))
+int yk_shape_lookup(mrb_state *mrb, mrb_iv_shape *shape, mrb_sym sym, uint64_t version)
+{ NOOPT_VAL(version); return mrb_shape_lookup(mrb, shape, sym); }
+
+
+#define SHAPE_LOOKUP(shape, sym) \
+  (yk_is_interpreting() ? mrb_shape_lookup(mrb, (shape), (sym)) \
+   : yk_shape_lookup((mrb_state*)yk_promote((void*)mrb), \
+                     (mrb_iv_shape*)yk_promote((void*)(shape)), \
+                     yk_promote(sym), \
+                     yk_promote(mrb_yk_shape_version)))
+
 #undef READ_B
 #undef READ_S
 #undef READ_W
@@ -2569,6 +2583,7 @@ struct RClass *yk_find_target_class(mrb_state *mrb, struct RClass *c, mrb_sym mi
   CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); \
 } while (0)
 #else
+#define SHAPE_LOOKUP(shape, sym) mrb_shape_lookup(mrb, (shape), (sym))
 #define CALL_CODE_HOOKS() do { insn = BYTECODE_DECODER(*ci->pc); CODE_FETCH_HOOK(mrb, irep, ci->pc, regs); } while (0)
 #endif // End of USE_YK
 
@@ -3607,7 +3622,7 @@ RETRY_TRY_BLOCK:
         struct RObject *o = mrb_obj_ptr(recv);
         if (MRB_OBJ_SHAPED_P(o) && o->iv) {
           mrb_shaped_iv *siv = (mrb_shaped_iv*)o->iv;
-          int idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
+          int idx = SHAPE_LOOKUP(siv->shape, irep->syms[b]);
           regs[a] = (idx >= 0 && !mrb_undef_p(siv->values[idx]))
                     ? siv->values[idx] : mrb_nil_value();
           NEXT;
@@ -3632,7 +3647,7 @@ RETRY_TRY_BLOCK:
         struct RObject *o = mrb_obj_ptr(recv);
         if (MRB_OBJ_SHAPED_P(o) && o->iv && !mrb_frozen_p(o)) {
           mrb_shaped_iv *siv = (mrb_shaped_iv*)o->iv;
-          int idx = mrb_shape_lookup(mrb, siv->shape, irep->syms[b]);
+          int idx = SHAPE_LOOKUP(siv->shape, irep->syms[b]);
           if (idx >= 0 && !mrb_undef_p(siv->values[idx])) {
             siv->values[idx] = regs[a];
             mrb_field_write_barrier_value(mrb, (struct RBasic*)o, regs[a]);
