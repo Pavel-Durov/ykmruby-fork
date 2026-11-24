@@ -2545,19 +2545,16 @@ struct RClass *yk_find_target_class(mrb_state *mrb, struct RClass *c, mrb_sym mi
 /* The same shape and sym always give the same result.
    - `mrb_shape_lookup` only reads fields that are set when a shape is created
      (`shape_transition`) and never change.
-   - Shapes are only freed when the interpreter shuts down (`mrb_close`).
-   - Freeing a shape bumps `mrb_yk_shape_version` to make memory reuse invalid. */
+   - Shapes are only freed when the interpreter shuts down (`mrb_close`). */
 __attribute__((yk_idempotent, noinline))
-int yk_shape_lookup(mrb_state *mrb, mrb_iv_shape *shape, mrb_sym sym, uint64_t version)
-{ NOOPT_VAL(version); return mrb_shape_lookup(mrb, shape, sym); }
-
+int yk_shape_lookup(mrb_state *mrb, mrb_iv_shape *shape, mrb_sym sym)
+{ return mrb_shape_lookup(mrb, shape, sym); }
 
 #define SHAPE_LOOKUP(shape, sym) \
   (yk_is_interpreting() ? mrb_shape_lookup(mrb, (shape), (sym)) \
    : yk_shape_lookup((mrb_state*)yk_promote((void*)mrb), \
                      (mrb_iv_shape*)yk_promote((void*)(shape)), \
-                     yk_promote(sym), \
-                     yk_promote(mrb_yk_shape_version)))
+                     yk_promote(sym)))
 
 #undef READ_B
 #undef READ_S

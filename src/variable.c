@@ -12,7 +12,6 @@
 #include <mruby/string.h>
 #include <mruby/variable.h>
 #include <mruby/internal.h>
-#include <mruby/yk.h>
 
 /* Instance variable table structure */
 typedef struct iv_tbl {
@@ -503,7 +502,6 @@ mrb_free_shape(mrb_state *mrb)
   if (mrb->root_shape) {
     shape_free_tree(mrb, mrb->root_shape);
     mrb->root_shape = NULL;
-    MRB_YK_SHAPE_VERSION_INC();
   }
 }
 
