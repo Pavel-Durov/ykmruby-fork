@@ -2542,8 +2542,11 @@ __attribute__((yk_idempotent, noinline))
 struct RClass *yk_find_target_class(mrb_state *mrb, struct RClass *c, mrb_sym mid, uint64_t version)
 { NOOPT_VAL(version); mrb_vm_find_method(mrb, c, &c, mid); return c; }
 
-/* This idempotent is safe since shapes are never modified after creation.
-   It's also keyed on `mrb_yk_shape_version`, which is increased whenever shapes are freed. */
+/* The same shape and sym always give the same result.
+   - `mrb_shape_lookup` only reads fields that are set when a shape is created
+     (`shape_transition`) and never change.
+   - Shapes are only freed when the interpreter shuts down (`mrb_close`).
+   - Freeing a shape bumps `mrb_yk_shape_version` to make memory reuse invalid. */
 __attribute__((yk_idempotent, noinline))
 int yk_shape_lookup(mrb_state *mrb, mrb_iv_shape *shape, mrb_sym sym, uint64_t version)
 { NOOPT_VAL(version); return mrb_shape_lookup(mrb, shape, sym); }
