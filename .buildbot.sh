@@ -49,4 +49,4 @@ cd ..
 # yk build and tests.
 export YK_CONFIG="`pwd`/yk/bin/yk-config"
 export YK_PROFILE=release
-rake -m -j "$(nproc)" MRUBY_CONFIG=yk_build_config all test
+YKD_SERIALISE_COMPILATION=1 YK_HOT_THRESHOLD=1 rake -m -j "$(nproc)" MRUBY_CONFIG=yk_build_config all test
